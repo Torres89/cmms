@@ -36,7 +36,8 @@ import {
   GridEventListener,
   GridRenderCellParams,
   GridRow,
-  GridValueGetterParams
+  GridValueGetterParams,
+  useGridApiRef
 } from '@mui/x-data-grid';
 import AddTwoToneIcon from '@mui/icons-material/AddTwoTone';
 import {
@@ -48,9 +49,7 @@ import {
 import Form from '../components/form';
 import * as Yup from 'yup';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { DataGridProProps, useGridApiRef } from '@mui/x-data-grid-pro';
 import { formatAssetValues } from '../../../utils/formatters';
-import { GroupingCellWithLazyLoading } from './GroupingCellWithLazyLoading';
 import { UserMiniDTO } from '../../../models/user';
 import UserAvatars from '../components/UserAvatars';
 import { enumerate } from '../../../utils/displayers';
@@ -106,7 +105,7 @@ function Assets() {
     (state) => state.assets
   );
   const { loadingExport } = useSelector((state) => state.exports);
-  const apiRef = useGridApiRef();
+
   const { getFormattedDate } = useContext(CompanySettingsContext);
   const { showSnackBar } = useContext(CustomSnackBarContext);
   const { locations } = useSelector((state) => state.locations);
@@ -136,7 +135,6 @@ function Assets() {
   };
   const [criteria, setCriteria] = useState<SearchCriteria>(initialCriteria);
   const onQueryChange = (event) => {
-    setView(event.target.value ? 'list' : 'hierarchy');
     onSearchQueryChange<AssetDTO>(event, criteria, setCriteria, [
       'name',
       'description',
@@ -388,7 +386,7 @@ function Assets() {
         getFormattedDate(params.value)
     }
   ];
-  useGridStatePersist(apiRef, columns, 'asset');
+
 
   // Mapping for column fields to API field names for sorting
   const fieldMapping: Record<string, string> = {
@@ -599,67 +597,11 @@ function Assets() {
     name: Yup.string().required(t('required_asset_name'))
   };
   const handleReset = (callApi: boolean) => {
-    dispatch(resetAssetsHierarchy(callApi));
+    // dispatch(resetAssetsHierarchy(callApi)); // Hierarchy no longer exists/reset not needed for list
+    setCriteria(initialCriteria);
   };
-  useEffect(() => {
-    if (apiRef.current.getRow) {
-      const handleRowExpansionChange: GridEventListener<
-        'rowExpansionChange'
-      > = async (node) => {
-        const row = apiRef.current.getRow(node.id) as AssetRow | null;
-        if (!node.childrenExpanded || !row || row.childrenFetched) {
-          return;
-        }
-        apiRef.current.updateRows([
-          {
-            id: t('loading_assets', { name: row.name, id: node.id }),
-            hierarchy: [...row.hierarchy, '']
-          }
-        ]);
-        if (
-          !deployedAssets.find((deployedAsset) => deployedAsset.id === row.id)
-        )
-          setDeployedAssets(
-            deployedAssets.concat({
-              id: row.id,
-              hierarchy: row.hierarchy
-            })
-          );
-        dispatch(getAssetChildren(row.id, row.hierarchy, pageable));
-      };
-      /**
-       * By default, the grid does not toggle the expansion of rows with 0 children
-       * We need to override the `cellKeyDown` event listener to force the expansion if there are children on the server
-       */
-      const handleCellKeyDown: GridEventListener<'cellKeyDown'> = (
-        params,
-        event
-      ) => {
-        const cellParams = apiRef.current.getCellParams(
-          params.id,
-          params.field
-        );
-        if (cellParams.colDef.type === 'treeDataGroup' && event.key === ' ') {
-          event.stopPropagation();
-          event.preventDefault();
-          event.defaultMuiPrevented = true;
 
-          apiRef.current.setRowChildrenExpansion(
-            params.id,
-            !params.rowNode.childrenExpanded
-          );
-        }
-      };
 
-      apiRef.current.subscribeEvent(
-        'rowExpansionChange',
-        handleRowExpansionChange
-      );
-      apiRef.current.subscribeEvent('cellKeyDown', handleCellKeyDown, {
-        isFirst: true
-      });
-    }
-  }, [apiRef]);
 
   const renderAssetAddModal = () => (
     <Dialog
@@ -696,12 +638,12 @@ function Assets() {
               warrantyExpirationDate: null,
               location: locationParamObject
                 ? {
-                    label: locationParamObject.name,
-                    value: locationParamObject.id
-                  }
+                  label: locationParamObject.name,
+                  value: locationParamObject.id
+                }
                 : null
             }}
-            onChange={({ field, e }) => {}}
+            onChange={({ field, e }) => { }}
             onSubmit={async (values) => {
               if (assetsHierarchy.length === 0)
                 fireGa4Event('first_asset_creation');
@@ -744,32 +686,9 @@ function Assets() {
     </Dialog>
   );
 
-  const groupingColDef: DataGridProProps['groupingColDef'] = {
-    headerName: t('hierarchy'),
-    disableReorder: true,
-    renderCell: (params) => <GroupingCellWithLazyLoading {...params} />
-  };
-  const CustomRow = (props: React.ComponentProps<typeof GridRow>) => {
-    const rowNode = apiRef.current.getRowNode(props.rowId);
-    const theme = useTheme();
 
-    return (
-      <GridRow
-        {...props}
-        style={
-          (rowNode?.depth ?? 0) > 0
-            ? {
-                backgroundColor:
-                  rowNode.depth % 2 === 0
-                    ? theme.colors.primary.light
-                    : theme.colors.primary.main,
-                color: 'white'
-              }
-            : undefined
-        }
-      />
-    );
-  };
+
+
   if (hasViewPermission(PermissionEntity.ASSETS))
     return (
       <>
@@ -828,27 +747,15 @@ function Assets() {
           >
             <Box sx={{ width: '95%' }}>
               <CustomDataGrid
-                pro
-                treeData={view === 'hierarchy'}
                 columns={columns}
-                rows={view === 'hierarchy' ? assetsHierarchy : assets.content}
-                apiRef={apiRef}
-                getRowHeight={() => 'auto'}
-                getTreeDataPath={(row) =>
-                  view === 'hierarchy'
-                    ? row.hierarchy.map((id) => id.toString())
-                    : [row.id.toString()]
-                }
-                disableColumnFilter
-                loading={loadingHierarchy}
-                groupingColDef={
-                  view === 'hierarchy' ? groupingColDef : undefined
-                }
-                paginationMode={view === 'hierarchy' ? undefined : 'server'}
-                sortingMode={view === 'hierarchy' ? 'client' : undefined}
-                onSortModelChange={(model) => {
-                  if (view !== 'hierarchy') return;
+                rows={assets.content}
 
+                getRowHeight={() => 'auto'}
+                disableColumnFilter
+                loading={loadingGet}
+                paginationMode="server"
+                sortingMode="server"
+                onSortModelChange={(model) => {
                   if (model.length === 0) {
                     setCriteria({
                       ...criteria,
@@ -873,16 +780,8 @@ function Assets() {
                 }}
                 onPageSizeChange={onPageSizeChange}
                 onPageChange={onPageChange}
-                rowsPerPageOptions={view === 'list' ? [10, 20, 50] : undefined}
-                components={{
-                  Row: CustomRow,
-                  NoRowsOverlay: () => (
-                    <NoRowsMessageWrapper
-                      message={t('noRows.asset.message')}
-                      action={t('noRows.asset.action')}
-                    />
-                  )
-                }}
+                rowsPerPageOptions={[10, 20, 50]}
+                checkboxSelection
                 onRowClick={(params) => {
                   navigate(getAssetUrl(params.id));
                 }}

@@ -84,7 +84,7 @@ function CompanyPlan(props: CompanyPlanProps) {
           }}
           variant="h3"
         >
-          {t('upgrade_plan')}
+          {licensingState.planName === 'Unlimited (Self-Hosted)' ? 'Plan Active' : t('upgrade_plan')}
         </Typography>
         <Typography
           variant="subtitle2"
@@ -96,16 +96,18 @@ function CompanyPlan(props: CompanyPlanProps) {
             )}`
           }}
         >
-          {t('you_are_using_plan', {
-            planName: isCloudVersion
-              ? plan.name
-              : licensingState.planName ?? 'Free',
-            expiration: expiryDate
-              ? new Date(expiryDate).toLocaleString(
-                  getLanguage === 'fr' ? 'fr-FR' : undefined
-                )
-              : ''
-          })}
+          {licensingState.planName === 'Unlimited (Self-Hosted)'
+            ? 'You are running the fully unlocked version.'
+            : t('you_are_using_plan', {
+                planName: isCloudVersion
+                  ? plan.name
+                  : licensingState.planName ?? 'Free',
+                expiration: expiryDate
+                  ? new Date(expiryDate).toLocaleString(
+                      getLanguage === 'fr' ? 'fr-FR' : undefined
+                    )
+                  : ''
+              })}
           {company.subscription.scheduledChangeDate &&
           company.subscription.scheduledChangeType === 'RESET_TO_FREE'
             ? ` ${t('subscription_will_cancel_on', {
@@ -116,6 +118,7 @@ function CompanyPlan(props: CompanyPlanProps) {
             : ''}
         </Typography>
         <Box sx={{ mt: 2 }}>
+          {licensingState.planName !== 'Unlimited (Self-Hosted)' && (
           <Button
             sx={{ mr: 2 }}
             variant="contained"
@@ -130,6 +133,7 @@ function CompanyPlan(props: CompanyPlanProps) {
           >
             {t('upgrade_now')}
           </Button>
+          )}
           {isCloudVersion && (
             <Button
               onClick={() => navigate('/pricing')}

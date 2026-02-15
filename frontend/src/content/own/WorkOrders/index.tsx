@@ -100,7 +100,7 @@ import _ from 'lodash';
 import SearchInput from '../components/SearchInput';
 import { PlanFeature } from '../../../models/owns/subscriptionPlan';
 import { getPreventiveMaintenanceUrl } from 'src/utils/urlPaths';
-import { useGridApiRef } from '@mui/x-data-grid-pro';
+import { useGridApiRef } from '@mui/x-data-grid';
 import useGridStatePersist from '../../../hooks/useGridStatePersist';
 import Request from '../../../models/owns/request';
 import { getErrorMessage } from '../../../utils/api';
@@ -384,10 +384,10 @@ function WorkOrders() {
               params.value === 'IN_PROGRESS'
                 ? 'success'
                 : params.value === 'ON_HOLD'
-                ? 'warning'
-                : params.value === 'COMPLETE'
-                ? 'info'
-                : 'secondary'
+                  ? 'warning'
+                  : params.value === 'COMPLETE'
+                    ? 'info'
+                    : 'secondary'
             }
           />
           <Typography sx={{ ml: 1 }}>{t(params.value)}</Typography>
@@ -528,8 +528,7 @@ function WorkOrders() {
     }
   ];
   // dataGrid state
-  const apiRef = useGridApiRef();
-  useGridStatePersist(apiRef, columns, 'workOrder');
+
 
   // Mapping for column fields to API field names for sorting
   const fieldMapping: Record<string, string> = {
@@ -715,12 +714,12 @@ function WorkOrders() {
                 : null,
               location: locationParamObject
                 ? {
-                    label: locationParamObject.name,
-                    value: locationParamObject.id
-                  }
+                  label: locationParamObject.name,
+                  value: locationParamObject.id
+                }
                 : null
             }}
-            onChange={({ field, e }) => {}}
+            onChange={({ field, e }) => { }}
             onSubmit={async (values) => {
               if (workOrders.totalElements === 0)
                 fireGa4Event('first_wo_creation');
@@ -790,7 +789,7 @@ function WorkOrders() {
               tasks,
               ...getWOBaseValues(t, currentWorkOrder)
             }}
-            onChange={({ field, e }) => {}}
+            onChange={({ field, e }) => { }}
             onSubmit={async (values) => {
               let formattedValues = formatValues(values);
               try {
@@ -984,7 +983,7 @@ function WorkOrders() {
           <Box sx={{ width: '95%' }}>
             {currentTab === 'list' ? (
               <CustomDataGrid
-                apiRef={apiRef}
+
                 pageSize={criteria.pageSize}
                 page={criteria.pageNum}
                 columns={columns}

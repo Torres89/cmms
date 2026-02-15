@@ -395,21 +395,26 @@ function Locations() {
     },
     ...(apiKey
       ? ([
-          {
-            name: 'mapSwitch',
-            type: 'checkbox',
-            label: t('put_location_in_map'),
-            relatedFields: [
-              { field: 'mapTitle', value: false, hide: true },
-              { field: 'coordinates', value: false, hide: true }
-            ]
-          },
-          {
-            name: 'mapTitle',
-            type: 'titleGroupField',
-            label: t('map_coordinates')
-          }
-        ] as IField[])
+        {
+          name: 'mapSwitch',
+          type: 'checkbox',
+          label: t('put_location_in_map'),
+          relatedFields: [
+            { field: 'mapTitle', value: false, hide: true },
+            { field: 'coordinates', value: false, hide: true }
+          ]
+        },
+        {
+          name: 'mapTitle',
+          type: 'titleGroupField',
+          label: t('map_coordinates')
+        },
+        {
+          name: 'coordinates',
+          type: 'coordinates',
+          label: t('map_coordinates')
+        }
+      ] as IField[])
       : []),
     {
       name: 'image',
@@ -469,7 +474,7 @@ function Locations() {
             validation={Yup.object().shape(shape)}
             submitText={t('add')}
             values={{}}
-            onChange={({ field, e }) => {}}
+            onChange={({ field, e }) => { }}
             onSubmit={async (values) => {
               let formattedValues = formatValues(values);
               return new Promise<void>((resolve, rej) => {
@@ -527,12 +532,12 @@ function Locations() {
         style={
           (rowNode?.depth ?? 0) > 0
             ? {
-                backgroundColor:
-                  rowNode.depth % 2 === 0
-                    ? theme.colors.primary.light
-                    : theme.colors.primary.main,
-                color: 'white'
-              }
+              backgroundColor:
+                rowNode.depth % 2 === 0
+                  ? theme.colors.primary.light
+                  : theme.colors.primary.main,
+              color: 'white'
+            }
             : undefined
         }
       />
@@ -632,18 +637,18 @@ function Locations() {
               }),
               coordinates: currentLocation?.longitude
                 ? {
-                    lng: currentLocation.longitude,
-                    lat: currentLocation.latitude
-                  }
+                  lng: currentLocation.longitude,
+                  lat: currentLocation.latitude
+                }
                 : null,
               parentLocation: currentLocation?.parentLocation
                 ? {
-                    label: currentLocation.parentLocation.name,
-                    value: currentLocation.parentLocation.id
-                  }
+                  label: currentLocation.parentLocation.name,
+                  value: currentLocation.parentLocation.id
+                }
                 : null
             }}
-            onChange={({ field, e }) => {}}
+            onChange={({ field, e }) => { }}
             onSubmit={async (values) => {
               let formattedValues = formatValues(values);
               //differentiate files from api and formattedValues
