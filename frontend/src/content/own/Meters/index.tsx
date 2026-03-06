@@ -63,7 +63,7 @@ import { exportEntity } from '../../../slices/exports';
 import MoreVertTwoToneIcon from '@mui/icons-material/MoreVertTwoTone';
 import { canAddReading, onSearchQueryChange } from '../../../utils/overall';
 import SearchInput from '../components/SearchInput';
-import { useGridApiRef } from '@mui/x-data-grid-pro';
+import { useGridApiRef } from '../../../hooks/useGridApiRef';
 import useGridStatePersist from '../../../hooks/useGridStatePersist';
 import { getErrorMessage } from '../../../utils/api';
 

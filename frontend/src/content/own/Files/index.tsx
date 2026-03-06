@@ -48,7 +48,7 @@ import NoRowsMessageWrapper from '../components/NoRowsMessageWrapper';
 import { useParams } from 'react-router-dom';
 import { SearchCriteria } from '../../../models/owns/page';
 import { isNumeric } from '../../../utils/validators';
-import { useGridApiRef } from '@mui/x-data-grid-pro';
+import { useGridApiRef } from '../../../hooks/useGridApiRef';
 import useGridStatePersist from '../../../hooks/useGridStatePersist';
 
 function Files() {

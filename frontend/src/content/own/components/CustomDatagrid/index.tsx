@@ -14,13 +14,13 @@ import useAuth from '../../../../hooks/useAuth';
 export type CustomDatagridColumn = GridEnrichedColDef & {
   uiConfigKey?: keyof Omit<UiConfiguration, 'id'>;
 };
-interface CustomDatagridProps extends DataGridProps {
+export interface CustomDatagridProps extends DataGridProps {
   notClickable?: boolean;
-  pro?: boolean;
+  apiRef?: any;
   columns: CustomDatagridColumn[];
 }
 
-function CustomDataGrid(props: CustomDatagridProps) {
+function CustomDataGrid({ notClickable, apiRef, ...props }: CustomDatagridProps) {
   const { t }: { t: any } = useTranslation();
   const theme = useTheme();
   const { height } = useWindowDimensions();
@@ -60,7 +60,7 @@ function CustomDataGrid(props: CustomDatagridProps) {
             backgroundColor: theme.colors.alpha.black[10]
           },
           '.MuiDataGrid-row': {
-            cursor: props.notClickable ? 'auto' : 'pointer'
+            cursor: notClickable ? 'auto' : 'pointer'
           }
         }}
         components={{

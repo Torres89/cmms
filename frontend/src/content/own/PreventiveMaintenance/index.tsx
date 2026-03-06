@@ -70,7 +70,7 @@ import Category from '../../../models/owns/category';
 import { LocationMiniDTO } from '../../../models/owns/location';
 import { AssetMiniDTO } from '../../../models/owns/asset';
 import { patchTasksOfPreventiveMaintenance } from '../../../slices/task';
-import { useGridApiRef } from '@mui/x-data-grid-pro';
+import { useGridApiRef } from '../../../hooks/useGridApiRef';
 import useGridStatePersist from '../../../hooks/useGridStatePersist';
 import EnumFilter from '../WorkOrders/Filters/EnumFilter';
 import SignalCellularAltTwoToneIcon from '@mui/icons-material/SignalCellularAltTwoTone';

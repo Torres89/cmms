@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>user-manual.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="atlas-cmms--user-manual">Atlas CMMS — User Manual</h1>
+<blockquote>
+<p><strong>Version:</strong> 1.0<br>
+<strong>Last Updated:</strong> March 5, 2026</p>
+</blockquote>
+<hr>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-introduction">Introduction</a></li>
+<li><a href="#2-getting-started">Getting Started</a></li>
+<li><a href="#3-dashboard--navigation">Dashboard &amp; Navigation</a></li>
+<li><a href="#4-work-orders">Work Orders</a></li>
+<li><a href="#5-preventive-maintenance">Preventive Maintenance</a></li>
+<li><a href="#6-work-requests">Work Requests</a></li>
+<li><a href="#7-assets">Assets</a></li>
+<li><a href="#8-locations">Locations</a></li>
+<li><a href="#9-inventory-parts--sets">Inventory (Parts &amp; Sets)</a></li>
+<li><a href="#10-purchase-orders">Purchase Orders</a></li>
+<li><a href="#11-meters--readings">Meters &amp; Readings</a></li>
+<li><a href="#12-people--teams">People &amp; Teams</a></li>
+<li><a href="#13-vendors--customers">Vendors &amp; Customers</a></li>
+<li><a href="#14-files">Files</a></li>
+<li><a href="#15-analytics">Analytics</a></li>
+<li><a href="#16-settings--configuration">Settings &amp; Configuration</a></li>
+<li><a href="#17-import--export">Import &amp; Export</a></li>
+<li><a href="#18-localization">Localization</a></li>
+<li><a href="#19-administrator-guide">Administrator Guide</a></li>
+<li><a href="#20-troubleshooting">Troubleshooting</a></li>
+</ol>
+<hr>
+<h2 id="1-introduction">1. Introduction</h2>
+<p><strong>Atlas CMMS</strong> is a Computerized Maintenance Management System designed to help organizations manage their maintenance operations, track assets, schedule preventive maintenance, handle work orders, manage inventory, and generate analytics reports.</p>
+<h3 id="key-capabilities">Key Capabilities</h3>
+<ul>
+<li><strong>Work Order Management</strong> — Create, assign, track, and close maintenance work orders</li>
+<li><strong>Preventive Maintenance</strong> — Schedule recurring maintenance based on time or meter readings</li>
+<li><strong>Asset Management</strong> — Track equipment with hierarchical relationships and full lifecycle data</li>
+<li><strong>Inventory Management</strong> — Manage spare parts, track quantities, and automate reordering</li>
+<li><strong>Request System</strong> — Allow non-maintenance staff to submit work requests for approval</li>
+<li><strong>Analytics &amp; Reporting</strong> — Dashboards for work order, asset, part, and request analytics</li>
+<li><strong>Multi-language Support</strong> — Available in 14 languages</li>
+<li><strong>Role-Based Access</strong> — Granular permissions per user role</li>
+</ul>
+<hr>
+<h2 id="2-getting-started">2. Getting Started</h2>
+<h3 id="21-accessing-the-system">2.1 Accessing the System</h3>
+<p>Open your web browser and navigate to the application URL:</p>
+<ul>
+<li><strong>Local Development:</strong> <code>http://localhost:3000</code></li>
+<li><strong>Production:</strong> Your organization's configured URL (e.g., <code>https://maint.yourdomain.com</code>)</li>
+</ul>
+<h3 id="22-creating-an-account">2.2 Creating an Account</h3>
+<ol>
+<li>Click <strong>Sign Up</strong> on the login page.</li>
+<li>Fill in your details: name, email, password, and company name.</li>
+<li>If email verification is enabled, check your inbox and click the activation link.</li>
+<li>Log in with your credentials.</li>
+</ol>
+<h3 id="23-logging-in">2.3 Logging In</h3>
+<ol>
+<li>Enter your <strong>email</strong> and <strong>password</strong>.</li>
+<li>Click <strong>Sign In</strong>.</li>
+<li>If SSO is enabled, you can also sign in with <strong>Google</strong> or <strong>Microsoft</strong>.</li>
+</ol>
+<h3 id="24-accepting-an-invitation">2.4 Accepting an Invitation</h3>
+<p>If you were invited by an administrator:</p>
+<ol>
+<li>Open the invitation link from your email.</li>
+<li>Set your password.</li>
+<li>Log in to access the system with your assigned role.</li>
+</ol>
+<h3 id="25-password-recovery">2.5 Password Recovery</h3>
+<ol>
+<li>On the login page, click <strong>Forgot Password?</strong></li>
+<li>Enter your registered email address.</li>
+<li>Check your inbox for a reset link.</li>
+<li>Click the link and set a new password.</li>
+</ol>
+<hr>
+<h2 id="3-dashboard--navigation">3. Dashboard &amp; Navigation</h2>
+<h3 id="sidebar-navigation">Sidebar Navigation</h3>
+<p>After logging in, the application presents a sidebar on the left with the following sections:</p>
+<table>
+<thead>
+<tr>
+<th>Menu Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Work Orders</strong></td>
+<td>View and manage all work orders</td>
+</tr>
+<tr>
+<td><strong>Preventive Maintenance</strong></td>
+<td>Manage PM schedules</td>
+</tr>
+<tr>
+<td><strong>Requests</strong></td>
+<td>View and approve work requests</td>
+</tr>
+<tr>
+<td><strong>Assets</strong></td>
+<td>Browse and manage assets</td>
+</tr>
+<tr>
+<td><strong>Locations</strong></td>
+<td>Manage location hierarchy</td>
+</tr>
+<tr>
+<td><strong>Inventory</strong></td>
+<td>Parts and part sets</td>
+</tr>
+<tr>
+<td><strong>Purchase Orders</strong></td>
+<td>Manage procurement</td>
+</tr>
+<tr>
+<td><strong>Meters</strong></td>
+<td>Track equipment meters</td>
+</tr>
+<tr>
+<td><strong>People &amp; Teams</strong></td>
+<td>Manage users and teams</td>
+</tr>
+<tr>
+<td><strong>Vendors &amp; Customers</strong></td>
+<td>External contacts</td>
+</tr>
+<tr>
+<td><strong>Categories</strong></td>
+<td>Manage classification categories</td>
+</tr>
+<tr>
+<td><strong>Files</strong></td>
+<td>Uploaded documents and images</td>
+</tr>
+<tr>
+<td><strong>Analytics</strong></td>
+<td>Data dashboards and charts</td>
+</tr>
+<tr>
+<td><strong>Settings</strong></td>
+<td>System configuration</td>
+</tr>
+</tbody>
+</table>
+<p>The sidebar can be collapsed for more screen space by clicking the toggle button.</p>
+<hr>
+<h2 id="4-work-orders">4. Work Orders</h2>
+<p>Work orders are the core of Atlas CMMS. They represent individual maintenance tasks that need to be completed.</p>
+<h3 id="41-viewing-work-orders">4.1 Viewing Work Orders</h3>
+<ul>
+<li>Navigate to <strong>Work Orders</strong> from the sidebar.</li>
+<li>The list view shows all work orders with columns for title, status, priority, assigned user, asset, due date, and more.</li>
+<li>Use the <strong>search</strong> bar and <strong>column filters</strong> to find specific work orders.</li>
+<li>Click any row to view full details.</li>
+</ul>
+<h3 id="42-creating-a-work-order">4.2 Creating a Work Order</h3>
+<ol>
+<li>Click the <strong>+ (Add)</strong> button.</li>
+<li>Fill in the required fields:
+<ul>
+<li><strong>Title</strong> — Brief description of the work</li>
+<li><strong>Priority</strong> — None, Low, Medium, High</li>
+<li><strong>Status</strong> — Open (default)</li>
+<li><strong>Assigned To</strong> — User or Team</li>
+<li><strong>Asset</strong> — Select the related asset (optional)</li>
+<li><strong>Location</strong> — Select the location (optional)</li>
+<li><strong>Due Date</strong> — When the work should be completed</li>
+<li><strong>Description</strong> — Detailed instructions</li>
+<li><strong>Category</strong> — Work order category</li>
+</ul>
+</li>
+<li>Optionally add:
+<ul>
+<li><strong>Checklist tasks</strong> — Step-by-step task list</li>
+<li><strong>Files / Images</strong> — Attach documents or photos</li>
+</ul>
+</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<h3 id="43-managing-a-work-order">4.3 Managing a Work Order</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Change status</strong></td>
+<td>Use the status dropdown (Open → In Progress → On Hold → Complete)</td>
+</tr>
+<tr>
+<td><strong>Add labor</strong></td>
+<td>Go to the Labor tab, log hours and hourly rate</td>
+</tr>
+<tr>
+<td><strong>Add parts used</strong></td>
+<td>Go to the Parts tab, select parts and quantities</td>
+</tr>
+<tr>
+<td><strong>Add costs</strong></td>
+<td>Go to the Additional Costs tab, enter extra expenses</td>
+</tr>
+<tr>
+<td><strong>Add tasks</strong></td>
+<td>Go to the Tasks tab, create or check off items</td>
+</tr>
+<tr>
+<td><strong>Attach files</strong></td>
+<td>Go to the Files tab, upload documents or photos</td>
+</tr>
+<tr>
+<td><strong>View history</strong></td>
+<td>Open the History tab to see all changes made</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-work-order-statuses">4.4 Work Order Statuses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Open</strong></td>
+<td>Newly created, not yet started</td>
+</tr>
+<tr>
+<td><strong>In Progress</strong></td>
+<td>Work is actively being performed</td>
+</tr>
+<tr>
+<td><strong>On Hold</strong></td>
+<td>Paused (e.g., waiting for parts)</td>
+</tr>
+<tr>
+<td><strong>Complete</strong></td>
+<td>Work finished</td>
+</tr>
+</tbody>
+</table>
+<h3 id="45-calendar-view">4.5 Calendar View</h3>
+<p>Work orders can be displayed in a calendar view showing due dates and schedules. Switch between day, week, and month views.</p>
+<hr>
+<h2 id="5-preventive-maintenance">5. Preventive Maintenance</h2>
+<p>Preventive Maintenance (PM) allows you to schedule recurring maintenance tasks that automatically generate work orders.</p>
+<h3 id="51-creating-a-pm-schedule">5.1 Creating a PM Schedule</h3>
+<ol>
+<li>Navigate to <strong>Preventive Maintenance</strong>.</li>
+<li>Click <strong>+ (Add)</strong>.</li>
+<li>Fill in:
+<ul>
+<li><strong>Title</strong> — Name of the PM task</li>
+<li><strong>Asset</strong> / <strong>Location</strong> — What to maintain</li>
+<li><strong>Assigned To</strong> — User or Team</li>
+<li><strong>Schedule</strong> — Frequency (daily, weekly, monthly, yearly, or custom cron)</li>
+<li><strong>Start Date</strong> — When to begin scheduling</li>
+<li><strong>Tasks</strong> — Checklist of steps to perform</li>
+</ul>
+</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<h3 id="52-how-it-works">5.2 How It Works</h3>
+<ul>
+<li>The system automatically creates work orders based on the PM schedule.</li>
+<li>Notifications are sent to assigned users before the due date.</li>
+<li>Meter-based triggers can also create work orders when a meter reading exceeds a threshold.</li>
+</ul>
+<h3 id="53-viewing-recent-work-orders">5.3 Viewing Recent Work Orders</h3>
+<p>Each PM entry shows its recently generated work orders so you can track completion rates.</p>
+<hr>
+<h2 id="6-work-requests">6. Work Requests</h2>
+<p>Requests allow non-maintenance personnel to submit work that needs to be done, which maintenance managers can then approve or reject.</p>
+<h3 id="61-submitting-a-request">6.1 Submitting a Request</h3>
+<ol>
+<li>Navigate to <strong>Requests</strong>.</li>
+<li>Click <strong>+ (Add)</strong>.</li>
+<li>Fill in the title, description, priority, asset, and location.</li>
+<li>Click <strong>Submit</strong>.</li>
+</ol>
+<h3 id="62-approving--rejecting-requests">6.2 Approving / Rejecting Requests</h3>
+<p>Managers see pending requests and can:</p>
+<ul>
+<li><strong>Approve</strong> — Automatically creates a work order from the request.</li>
+<li><strong>Cancel</strong> — Rejects the request with an optional reason.</li>
+</ul>
+<hr>
+<h2 id="7-assets">7. Assets</h2>
+<p>Assets represent the physical equipment and machinery that your organization maintains.</p>
+<h3 id="71-viewing-assets">7.1 Viewing Assets</h3>
+<ul>
+<li>Navigate to <strong>Assets</strong> from the sidebar.</li>
+<li>Assets are displayed in a list or grouped view.</li>
+<li>Click an asset to see its detail page.</li>
+</ul>
+<h3 id="72-asset-detail-tabs">7.2 Asset Detail Tabs</h3>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Details</strong></td>
+<td>Name, description, model, serial number, category, location, parent asset, custom fields</td>
+</tr>
+<tr>
+<td><strong>Work Orders</strong></td>
+<td>All work orders linked to this asset</td>
+</tr>
+<tr>
+<td><strong>Parts</strong></td>
+<td>Parts associated with this asset</td>
+</tr>
+<tr>
+<td><strong>Files</strong></td>
+<td>Documents, manuals, and photos</td>
+</tr>
+<tr>
+<td><strong>Meters</strong></td>
+<td>Meters attached to this asset with readings</td>
+</tr>
+<tr>
+<td><strong>Downtimes</strong></td>
+<td>Downtime history and duration</td>
+</tr>
+<tr>
+<td><strong>Analytics</strong></td>
+<td>Asset-specific cost and reliability analytics</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-creating-an-asset">7.3 Creating an Asset</h3>
+<ol>
+<li>Click <strong>+ (Add)</strong>.</li>
+<li>Fill in name, description, location, category, and other fields.</li>
+<li>Optionally set a <strong>parent asset</strong> to create a hierarchy.</li>
+<li>Attach files (manuals, photos).</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<h3 id="74-asset-lookup">7.4 Asset Lookup</h3>
+<p>Assets support <strong>NFC tag</strong> and <strong>barcode</strong> lookup for quick identification in the field.</p>
+<hr>
+<h2 id="8-locations">8. Locations</h2>
+<p>Locations represent the physical places where assets are installed and work is performed.</p>
+<h3 id="81-location-hierarchy">8.1 Location Hierarchy</h3>
+<p>Locations support a parent-child hierarchy (e.g., Building → Floor → Room). Use <strong>Children</strong> to navigate through the tree.</p>
+<h3 id="82-creating-a-location">8.2 Creating a Location</h3>
+<ol>
+<li>Navigate to <strong>Locations</strong>.</li>
+<li>Click <strong>+ (Add)</strong>.</li>
+<li>Enter name, description, address, and optionally select a parent location.</li>
+<li>Upload a <strong>floor plan</strong> image (optional).</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<hr>
+<h2 id="9-inventory-parts--sets">9. Inventory (Parts &amp; Sets)</h2>
+<h3 id="91-parts">9.1 Parts</h3>
+<p>Parts are spare parts and materials used in maintenance work.</p>
+<ul>
+<li><strong>View parts</strong> — Navigate to <strong>Inventory → Parts</strong>.</li>
+<li><strong>Create a part</strong> — Add name, description, quantity, cost, minimum quantity, category, vendors, and storage location.</li>
+<li><strong>Track usage</strong> — Part quantities are automatically decremented when used in work orders.</li>
+<li><strong>Low stock alerts</strong> — Set minimum quantities to get notified when stock is low.</li>
+</ul>
+<h3 id="92-part-sets">9.2 Part Sets</h3>
+<p>Part sets are predefined groups of parts commonly used together, making it easy to add multiple parts to a work order at once.</p>
+<hr>
+<h2 id="10-purchase-orders">10. Purchase Orders</h2>
+<p>Purchase orders help you procure parts and materials from vendors.</p>
+<h3 id="101-creating-a-purchase-order">10.1 Creating a Purchase Order</h3>
+<ol>
+<li>Navigate to <strong>Purchase Orders</strong>.</li>
+<li>Click <strong>+ (Add)</strong> or <strong>Create</strong>.</li>
+<li>Select a <strong>vendor</strong>.</li>
+<li>Add <strong>parts and quantities</strong>.</li>
+<li>Set the due date and any notes.</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<h3 id="102-responding-to-a-purchase-order">10.2 Responding to a Purchase Order</h3>
+<p>Vendors can be notified and the PO status updated as:</p>
+<ul>
+<li><strong>Draft</strong> → <strong>Pending</strong> → <strong>Approved</strong> → <strong>Received</strong></li>
+</ul>
+<p>When parts are received, inventory quantities can be updated.</p>
+<hr>
+<h2 id="11-meters--readings">11. Meters &amp; Readings</h2>
+<p>Meters track measurable values on equipment (e.g., operating hours, mileage, temperature).</p>
+<h3 id="111-creating-a-meter">11.1 Creating a Meter</h3>
+<ol>
+<li>Navigate to <strong>Meters</strong>.</li>
+<li>Click <strong>+ (Add)</strong>.</li>
+<li>Set the name, unit, asset, category, and reading frequency.</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<h3 id="112-logging-readings">11.2 Logging Readings</h3>
+<ol>
+<li>Open a meter.</li>
+<li>Enter a new reading value with the date.</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<h3 id="113-meter-based-triggers">11.3 Meter-Based Triggers</h3>
+<p>Create triggers that automatically generate work orders when a meter reading reaches a specified threshold. This is useful for usage-based maintenance (e.g., oil change every 5,000 hours).</p>
+<hr>
+<h2 id="12-people--teams">12. People &amp; Teams</h2>
+<h3 id="121-managing-users">12.1 Managing Users</h3>
+<ul>
+<li>Navigate to <strong>People &amp; Teams → People</strong>.</li>
+<li><strong>Invite users</strong> — Send email invitations with an assigned role.</li>
+<li><strong>Edit users</strong> — Update name, role, phone, and other details.</li>
+<li><strong>Disable users</strong> — Deactivate without deleting.</li>
+</ul>
+<h3 id="122-managing-teams">12.2 Managing Teams</h3>
+<ul>
+<li><strong>Create teams</strong> — Group users into teams (e.g., &quot;Electrical Team&quot;).</li>
+<li><strong>Assign to work orders</strong> — Teams can be assigned to work orders alongside or instead of individuals.</li>
+</ul>
+<h3 id="123-roles--permissions">12.3 Roles &amp; Permissions</h3>
+<p>Each user is assigned a <strong>role</strong> that controls what they can see and do:</p>
+<table>
+<thead>
+<tr>
+<th>Permission Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>View</strong></td>
+<td>Can see records (own only or all)</td>
+</tr>
+<tr>
+<td><strong>Create</strong></td>
+<td>Can create new records</td>
+</tr>
+<tr>
+<td><strong>Edit Others</strong></td>
+<td>Can modify records created by other users</td>
+</tr>
+<tr>
+<td><strong>Delete Others</strong></td>
+<td>Can remove records created by other users</td>
+</tr>
+</tbody>
+</table>
+<p>Permissions are set per entity type (work orders, assets, parts, etc.).</p>
+<hr>
+<h2 id="13-vendors--customers">13. Vendors &amp; Customers</h2>
+<h3 id="vendors">Vendors</h3>
+<p>Manage external vendors who supply parts or services. Each vendor can have contact information, a company name, and be linked to purchase orders and parts.</p>
+<h3 id="customers">Customers</h3>
+<p>Track customers whose assets your organization maintains. Customers can be linked to assets and locations.</p>
+<hr>
+<h2 id="14-files">14. Files</h2>
+<p>The <strong>Files</strong> section provides a centralized file manager for all uploaded documents, images, and attachments.</p>
+<ul>
+<li>Files are stored in <strong>MinIO</strong> (S3-compatible storage) by default.</li>
+<li>Each file is scoped to your company.</li>
+<li>Files can be associated with work orders, assets, parts, and other entities.</li>
+<li>Supported operations: upload, rename, download, and delete.</li>
+</ul>
+<hr>
+<h2 id="15-analytics">15. Analytics</h2>
+<p>Atlas CMMS provides analytics dashboards for data-driven decision making.</p>
+<h3 id="available-dashboards">Available Dashboards</h3>
+<table>
+<thead>
+<tr>
+<th>Dashboard</th>
+<th>Key Metrics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Work Order Analytics</strong></td>
+<td>Completion rate, average time to complete, status distribution, cost breakdown, trends over time</td>
+</tr>
+<tr>
+<td><strong>Asset Analytics</strong></td>
+<td>Downtime analysis, cost per asset, reliability metrics, mean time between failures (MTBF)</td>
+</tr>
+<tr>
+<td><strong>Part Analytics</strong></td>
+<td>Consumption trends, cost by part, most-used parts</td>
+</tr>
+<tr>
+<td><strong>Request Analytics</strong></td>
+<td>Request volume, approval rate, average response time</td>
+</tr>
+</tbody>
+</table>
+<h3 id="using-analytics">Using Analytics</h3>
+<ol>
+<li>Navigate to <strong>Analytics</strong> from the sidebar.</li>
+<li>Select the dashboard type.</li>
+<li>Use date range filters to narrow the time period.</li>
+<li>Charts and tables update automatically.</li>
+</ol>
+<hr>
+<h2 id="16-settings--configuration">16. Settings &amp; Configuration</h2>
+<p>Navigate to <strong>Settings</strong> to configure system behavior.</p>
+<h3 id="161-general-settings">16.1 General Settings</h3>
+<ul>
+<li><strong>Company profile</strong> — Name, address, logo</li>
+<li><strong>General preferences</strong> — Date format, currency, work order auto-close settings</li>
+<li><strong>Currency</strong> — Set the default currency for costs</li>
+</ul>
+<h3 id="162-work-order-settings">16.2 Work Order Settings</h3>
+<ul>
+<li>Configure required and optional fields for work orders</li>
+<li>Set default status and priority values</li>
+<li>Configure work order numbering (custom sequences)</li>
+</ul>
+<h3 id="163-request-settings">16.3 Request Settings</h3>
+<ul>
+<li>Configure the work request form fields</li>
+<li>Set which fields are required for requesters</li>
+</ul>
+<h3 id="164-roles">16.4 Roles</h3>
+<ul>
+<li>Create and manage custom roles</li>
+<li>Set granular permissions per entity type</li>
+</ul>
+<h3 id="165-checklists">16.5 Checklists</h3>
+<ul>
+<li>Create reusable checklists with predefined tasks</li>
+<li>Assign checklists to preventive maintenance schedules or work orders</li>
+</ul>
+<h3 id="166-workflows">16.6 Workflows</h3>
+<p>Workflows automate actions based on conditions:</p>
+<ul>
+<li><strong>Trigger:</strong> When a work order is created, status changes, etc.</li>
+<li><strong>Condition:</strong> If priority is High, if category is Electrical, etc.</li>
+<li><strong>Action:</strong> Auto-assign to a user/team, send notification, change priority, etc.</li>
+</ul>
+<h3 id="167-ui-configuration">16.7 UI Configuration</h3>
+<ul>
+<li>Toggle visibility of sidebar menu items</li>
+<li>Customize which modules appear based on your organization's needs</li>
+</ul>
+<hr>
+<h2 id="17-import--export">17. Import &amp; Export</h2>
+<h3 id="171-importing-data">17.1 Importing Data</h3>
+<ol>
+<li>Navigate to <strong>Settings → Import</strong> (or the Import section).</li>
+<li>Select the entity type: Work Orders, Assets, Locations, Parts, Meters, or Preventive Maintenances.</li>
+<li><strong>Download the template</strong> CSV file.</li>
+<li>Fill in the template with your data.</li>
+<li>Upload the completed CSV file.</li>
+<li>Review the import preview and confirm.</li>
+</ol>
+<h3 id="172-exporting-data">17.2 Exporting Data</h3>
+<ol>
+<li>Navigate to the entity list (e.g., Work Orders).</li>
+<li>Use the <strong>Export</strong> option.</li>
+<li>Download the data as CSV or Excel.</li>
+</ol>
+<p>Exportable entities: Work Orders, Assets, Locations, Parts, Meters.</p>
+<hr>
+<h2 id="18-localization">18. Localization</h2>
+<p>Atlas CMMS supports <strong>14 languages</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>English</td>
+<td>en</td>
+</tr>
+<tr>
+<td>Spanish</td>
+<td>es</td>
+</tr>
+<tr>
+<td>French</td>
+<td>fr</td>
+</tr>
+<tr>
+<td>German</td>
+<td>de</td>
+</tr>
+<tr>
+<td>Portuguese (Brazil)</td>
+<td>pt_br</td>
+</tr>
+<tr>
+<td>Italian</td>
+<td>it</td>
+</tr>
+<tr>
+<td>Dutch</td>
+<td>nl</td>
+</tr>
+<tr>
+<td>Polish</td>
+<td>pl</td>
+</tr>
+<tr>
+<td>Turkish</td>
+<td>tr</td>
+</tr>
+<tr>
+<td>Swedish</td>
+<td>sv</td>
+</tr>
+<tr>
+<td>Russian</td>
+<td>ru</td>
+</tr>
+<tr>
+<td>Hungarian</td>
+<td>hu</td>
+</tr>
+<tr>
+<td>Arabic</td>
+<td>ar</td>
+</tr>
+<tr>
+<td>Chinese (Simplified)</td>
+<td>zh_cn</td>
+</tr>
+</tbody>
+</table>
+<h3 id="changing-your-language">Changing Your Language</h3>
+<p>The language is automatically detected from your browser settings. You can manually change it from your user preferences or account settings. The selected language is saved locally and persists across sessions.</p>
+<hr>
+<h2 id="19-administrator-guide">19. Administrator Guide</h2>
+<h3 id="191-initial-setup-checklist">19.1 Initial Setup Checklist</h3>
+<ol>
+<li><strong>Configure company settings</strong> — Set company name, address, and logo.</li>
+<li><strong>Set up roles</strong> — Create roles with appropriate permissions for different user types.</li>
+<li><strong>Create locations</strong> — Build your location hierarchy.</li>
+<li><strong>Add assets</strong> — Import or manually create your asset registry.</li>
+<li><strong>Set up categories</strong> — Define work order, asset, part, and meter categories.</li>
+<li><strong>Invite users</strong> — Send invitations to your team members.</li>
+<li><strong>Create parts</strong> — Add your spare parts inventory.</li>
+<li><strong>Set up PMs</strong> — Define preventive maintenance schedules.</li>
+<li><strong>Configure workflows</strong> — Automate common processes.</li>
+<li><strong>Review settings</strong> — Verify work order and request field configurations.</li>
+</ol>
+<h3 id="192-managing-subscriptions">19.2 Managing Subscriptions</h3>
+<ul>
+<li>View your current subscription plan under <strong>Settings → Subscription</strong>.</li>
+<li>Upgrade or downgrade plans as needed.</li>
+<li>Payment is managed through the Paddle payment platform.</li>
+</ul>
+<h3 id="193-backup--restore">19.3 Backup &amp; Restore</h3>
+<p>Use the provided backup scripts for database and file storage:</p>
+<ul>
+<li><strong>Windows:</strong> <code>scripts/backup/atlas-backup.ps1</code></li>
+<li><strong>Linux/Mac:</strong> <code>scripts/backup/atlas-backup.sh</code></li>
+</ul>
+<p>These scripts back up both the PostgreSQL database and MinIO file storage.</p>
+<h3 id="194-accessing-api-documentation">19.4 Accessing API Documentation</h3>
+<p>Swagger UI is available at:</p>
+<pre class="hljs"><code><div>http://localhost:8080/swagger-ui/index.html
+</div></code></pre>
+<p>This provides interactive documentation for all API endpoints.</p>
+<hr>
+<h2 id="20-troubleshooting">20. Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cannot log in</strong></td>
+<td>Verify your email and password. Use &quot;Forgot Password&quot; to reset. Check if your account is activated.</td>
+</tr>
+<tr>
+<td><strong>Page shows &quot;Unauthorized&quot;</strong></td>
+<td>Your JWT token may have expired. Log out and log back in.</td>
+</tr>
+<tr>
+<td><strong>Work orders not auto-generating</strong></td>
+<td>Check that the PM schedule is active and the Quartz scheduler is running. Verify the schedule's start date is in the past.</td>
+</tr>
+<tr>
+<td><strong>Files not uploading</strong></td>
+<td>Ensure MinIO is running and accessible. Check the <code>PUBLIC_MINIO_ENDPOINT</code> configuration. Verify file size is under 35MB.</td>
+</tr>
+<tr>
+<td><strong>Email notifications not sending</strong></td>
+<td>Verify <code>ENABLE_EMAIL_NOTIFICATIONS=true</code> in your environment. Check SMTP or SendGrid credentials.</td>
+</tr>
+<tr>
+<td><strong>Slow performance</strong></td>
+<td>Check PostgreSQL connection pool settings. Verify adequate server resources. Consider database indexing.</td>
+</tr>
+<tr>
+<td><strong>Blank page after login</strong></td>
+<td>Clear browser cache and cookies. Check that the <code>API_URL</code> frontend configuration points to the correct backend.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getting-help">Getting Help</h3>
+<ul>
+<li><strong>Swagger API Docs:</strong> <code>http://localhost:8080/swagger-ui/index.html</code></li>
+<li><strong>Health Check:</strong> <code>GET http://localhost:8080/health-check</code> — verifies the API is running</li>
+<li><strong>MinIO Console:</strong> <code>http://localhost:9001</code> — verify file storage is operational</li>
+<li><strong>Application Logs:</strong> Check Docker container logs with <code>docker logs atlas-cmms-backend</code> or <code>docker logs atlas-cmms-frontend</code></li>
+</ul>
+
+</body>
+</html>

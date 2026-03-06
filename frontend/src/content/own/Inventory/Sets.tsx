@@ -42,7 +42,7 @@ import { CustomSnackBarContext } from '../../../contexts/CustomSnackBarContext';
 import { CompanySettingsContext } from '../../../contexts/CompanySettingsContext';
 import NoRowsMessageWrapper from '../components/NoRowsMessageWrapper';
 import { formatSelectMultiple } from '../../../utils/formatters';
-import { useGridApiRef } from '@mui/x-data-grid-pro';
+import { useGridApiRef } from '../../../hooks/useGridApiRef';
 import useGridStatePersist from '../../../hooks/useGridStatePersist';
 
 interface PropsType {

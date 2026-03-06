@@ -36,9 +36,9 @@ import {
   GridEventListener,
   GridRenderCellParams,
   GridRow,
-  GridValueGetterParams,
-  useGridApiRef
+  GridValueGetterParams
 } from '@mui/x-data-grid';
+import { useGridApiRef } from '../../../hooks/useGridApiRef';
 import AddTwoToneIcon from '@mui/icons-material/AddTwoTone';
 import {
   AssetDTO,

@@ -1,0 +1,3 @@
+docker compose stop api frontend
+docker compose up -d postgres minio
+docker compose ps

@@ -18,12 +18,10 @@ import CustomDataGrid, { CustomDatagridColumn } from '../CustomDatagrid';
 import {
   GridEventListener,
   GridRenderCellParams,
-  GridRow,
   GridSelectionModel
 } from '@mui/x-data-grid';
-import { DataGridProProps, useGridApiRef } from '@mui/x-data-grid-pro';
+import { useGridApiRef } from '../../../../hooks/useGridApiRef';
 import { AssetMiniDTO } from '../../../../models/owns/asset';
-import { GroupingCellWithLazyLoading } from '../../Assets/GroupingCellWithLazyLoading';
 import ReplayTwoToneIcon from '@mui/icons-material/ReplayTwoTone';
 import { Pageable } from '../../../../models/owns/page';
 import NoRowsMessageWrapper from '../NoRowsMessageWrapper';
@@ -159,36 +157,17 @@ const SelectAssetModal: React.FC<SelectAssetModalProps> = ({
       field: 'name',
       headerName: t('name'),
       flex: 1,
-      renderCell: (params: GridRenderCellParams<string>) => (
-        <Box sx={{ fontWeight: 'bold' }}>{params.value}</Box>
-      )
+      renderCell: (params: GridRenderCellParams<string>) => {
+        const depth = (params.row.hierarchy?.length ?? 1) - 1;
+        return (
+          <Box sx={{ fontWeight: 'bold', pl: depth * 3 }}>
+            {depth > 0 && '└ '}
+            {params.value}
+          </Box>
+        );
+      }
     }
   ];
-
-  const groupingColDef: DataGridProProps['groupingColDef'] = {
-    headerName: t('hierarchy'),
-    renderCell: (params) => <GroupingCellWithLazyLoading {...params} />
-  };
-
-  const CustomRow = (props: React.ComponentProps<typeof GridRow>) => {
-    const rowNode = apiRef.current.getRowNode(props.rowId);
-    return (
-      <GridRow
-        {...props}
-        style={
-          (rowNode?.depth ?? 0) > 0
-            ? {
-                backgroundColor:
-                  rowNode.depth % 2 === 0
-                    ? theme.colors.primary.light
-                    : theme.colors.primary.main,
-                color: 'white'
-              }
-            : undefined
-        }
-      />
-    );
-  };
 
   const handleRowClick: GridEventListener<'rowClick'> = (params) => {
     // Prevent selection of loading rows or excluded assets
@@ -214,9 +193,8 @@ const SelectAssetModal: React.FC<SelectAssetModalProps> = ({
     }
     setSelectionModel(currentSelectionModel);
 
-    // Update the selected assets array
     const updatedSelectedAssets = currentSelectionModel.map((id) => {
-      return apiRef.current.getRow(id) as IRow;
+      return filteredAssetsHierarchy.find((a) => a.id === id) as IRow;
     });
     setSelectedAssets(updatedSelectedAssets);
     if (single) {
@@ -283,16 +261,12 @@ const SelectAssetModal: React.FC<SelectAssetModalProps> = ({
       <DialogContent dividers sx={{ p: 1, height: '60vh' }}>
         <Box sx={{ height: '100%', width: '100%' }}>
           <CustomDataGrid
-            pro
-            treeData
             apiRef={apiRef}
             columns={columns}
             rows={filteredAssetsHierarchy}
             loading={loadingGet}
             getRowId={(row) => row.id}
             getRowHeight={() => 'auto'}
-            getTreeDataPath={(row) => row.hierarchy.map(String)}
-            groupingColDef={groupingColDef}
             disableColumnFilter
             checkboxSelection={!single}
             selectionModel={selectionModel}
@@ -303,13 +277,12 @@ const SelectAssetModal: React.FC<SelectAssetModalProps> = ({
               }
               setSelectionModel(newSelectionModel);
               const updatedSelectedAssets = newSelectionModel.map((id) => {
-                return apiRef.current.getRow(id) as IRow;
+                const found = filteredAssetsHierarchy.find((a) => a.id === id);
+                return found as IRow;
               });
-
               setSelectedAssets(updatedSelectedAssets);
             }}
             components={{
-              Row: CustomRow,
               NoRowsOverlay: () => (
                 <NoRowsMessageWrapper
                   message={t('noRows.asset.message')}

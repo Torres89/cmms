@@ -100,7 +100,7 @@ import _ from 'lodash';
 import SearchInput from '../components/SearchInput';
 import { PlanFeature } from '../../../models/owns/subscriptionPlan';
 import { getPreventiveMaintenanceUrl } from 'src/utils/urlPaths';
-import { useGridApiRef } from '@mui/x-data-grid';
+import { useGridApiRef } from '../../../hooks/useGridApiRef';
 import useGridStatePersist from '../../../hooks/useGridStatePersist';
 import Request from '../../../models/owns/request';
 import { getErrorMessage } from '../../../utils/api';

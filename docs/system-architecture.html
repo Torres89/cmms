@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>system-architecture.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="atlas-cmms--system-architecture">Atlas CMMS — System Architecture</h1>
+<blockquote>
+<p><strong>Version:</strong> 1.0<br>
+<strong>Last Updated:</strong> March 5, 2026</p>
+</blockquote>
+<hr>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-high-level-overview">High-Level Overview</a></li>
+<li><a href="#2-infrastructure-diagram">Infrastructure Diagram</a></li>
+<li><a href="#3-frontend-architecture">Frontend Architecture</a></li>
+<li><a href="#4-backend-architecture">Backend Architecture</a></li>
+<li><a href="#5-database-schema-entity-map">Database Schema (Entity Map)</a></li>
+<li><a href="#6-api-endpoints-reference">API Endpoints Reference</a></li>
+<li><a href="#7-authentication--security-flow">Authentication &amp; Security Flow</a></li>
+<li><a href="#8-data-flow">Data Flow</a></li>
+<li><a href="#9-deployment-architecture">Deployment Architecture</a></li>
+<li><a href="#10-port-reference">Port Reference</a></li>
+</ol>
+<hr>
+<h2 id="1-high-level-overview">1. High-Level Overview</h2>
+<p>Atlas CMMS (Computerized Maintenance Management System) is a full-stack web application for managing maintenance operations, assets, work orders, preventive maintenance, inventory, and more.</p>
+<pre><code class="language-mermaid"><div class="mermaid">graph TB
+    subgraph Client
+        Browser["Browser (User)"]
+    end
+
+    subgraph "Docker Host"
+        FE["Frontend<br/>React 17 + MUI 5<br/>Nginx :3000"]
+        API["Backend API<br/>Spring Boot 3.2<br/>Java 17 :8080"]
+        DB["PostgreSQL 16<br/>:5432"]
+        MINIO["MinIO<br/>Object Storage<br/>:9000 / :9001"]
+    end
+
+    subgraph "External Services (Optional)"
+        SENDGRID["SendGrid"]
+        GCP["Google Cloud Storage"]
+        PADDLE["Paddle (Payments)"]
+        OAUTH["OAuth2 Providers<br/>Google / Microsoft"]
+        EXPO["Expo Push<br/>Notifications"]
+    end
+
+    Browser -->|"HTTP :3000"| FE
+    FE -->|"REST API :8080"| API
+    API -->|"JDBC :5432"| DB
+    API -->|"S3 API :9000"| MINIO
+    API -.->|"SMTP / API"| SENDGRID
+    API -.->|"Cloud Storage API"| GCP
+    API -.->|"Webhooks"| PADDLE
+    API -.->|"OAuth2"| OAUTH
+    API -.->|"Push API"| EXPO
+    Browser -->|"Fetch files :9000"| MINIO
+</div></code></pre>
+<hr>
+<h2 id="2-infrastructure-diagram">2. Infrastructure Diagram</h2>
+<p>All core services run as Docker containers orchestrated by Docker Compose.</p>
+<pre><code class="language-mermaid"><div class="mermaid">graph LR
+    subgraph "docker-compose.yml"
+        direction TB
+
+        PG["postgres<br/>postgres:16-alpine<br/>Container: atlas_db<br/>Port: 5432"]
+        MN["minio<br/>minio/minio<br/>Container: atlas_minio<br/>Ports: 9000, 9001"]
+        AP["api<br/>intelloop/atlas-cmms-backend<br/>Container: atlas-cmms-backend<br/>Port: 8080"]
+        FR["frontend<br/>intelloop/atlas-cmms-frontend<br/>Container: atlas-cmms-frontend<br/>Port: 3000"]
+    end
+
+    PG --- |"depends_on"| AP
+    MN --- |"depends_on"| AP
+    AP --- |"depends_on"| FR
+
+    subgraph Volumes
+        V1["postgres_data"]
+        V2["minio_data"]
+        V3["./logo"]
+    end
+
+    V1 -.-> PG
+    V2 -.-> MN
+    V3 -.-> AP
+</div></code></pre>
+<h3 id="service-dependencies">Service Dependencies</h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Image</th>
+<th>Container Name</th>
+<th>Depends On</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>postgres</strong></td>
+<td><code>postgres:16-alpine</code></td>
+<td><code>atlas_db</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>minio</strong></td>
+<td><code>minio/minio:RELEASE.2025-04-22T22-12-26Z</code></td>
+<td><code>atlas_minio</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>api</strong></td>
+<td><code>intelloop/atlas-cmms-backend</code></td>
+<td><code>atlas-cmms-backend</code></td>
+<td>postgres, minio</td>
+</tr>
+<tr>
+<td><strong>frontend</strong></td>
+<td><code>intelloop/atlas-cmms-frontend</code></td>
+<td><code>atlas-cmms-frontend</code></td>
+<td>api</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="3-frontend-architecture">3. Frontend Architecture</h2>
+<h3 id="technology-stack">Technology Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>React 17.0.2 + TypeScript 4.7</td>
+</tr>
+<tr>
+<td>UI Library</td>
+<td>Material-UI (MUI) 5.8</td>
+</tr>
+<tr>
+<td>State Management</td>
+<td>Redux Toolkit 1.8 + React-Redux 8</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>React Router 6.3</td>
+</tr>
+<tr>
+<td>Forms</td>
+<td>Formik 2.2 + Yup 0.32</td>
+</tr>
+<tr>
+<td>Charts</td>
+<td>ApexCharts + Recharts</td>
+</tr>
+<tr>
+<td>Calendar</td>
+<td>FullCalendar</td>
+</tr>
+<tr>
+<td>i18n</td>
+<td>i18next (14 languages)</td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td>JWT (custom) + Auth0 SDK (optional SSO)</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>Create React App + Nginx</td>
+</tr>
+</tbody>
+</table>
+<h3 id="frontend-component-architecture">Frontend Component Architecture</h3>
+<pre><code class="language-mermaid"><div class="mermaid">graph TB
+    subgraph "App Shell"
+        App["App.tsx<br/>ThemeProvider + Router"]
+        Auth["JWTAuthContext<br/>Auth State"]
+        Store["Redux Store<br/>40+ Slices"]
+    end
+
+    subgraph "Layouts"
+        Base["BaseLayout<br/>Public Pages"]
+        Extended["ExtendedSidebarLayout<br/>Authenticated App"]
+    end
+
+    subgraph "Core Pages (under /app/)"
+        WO["Work Orders"]
+        PM["Preventive<br/>Maintenance"]
+        REQ["Requests"]
+        AST["Assets"]
+        LOC["Locations"]
+        INV["Inventory<br/>Parts & Sets"]
+        PO["Purchase Orders"]
+        MTR["Meters"]
+        PPL["People & Teams"]
+        VC["Vendors &<br/>Customers"]
+        FILES["Files"]
+        ANA["Analytics"]
+        SET["Settings"]
+        IMP["Import / Export"]
+    end
+
+    subgraph "Shared Components"
+        DG["CustomDatagrid"]
+        FORM["Form Components<br/>SelectAssetModal<br/>SelectLocationModal"]
+        NAV["Sidebar Navigation"]
+    end
+
+    App --> Auth
+    App --> Store
+    App --> Base
+    App --> Extended
+    Extended --> WO & PM & REQ & AST & LOC & INV & PO & MTR & PPL & VC & FILES & ANA & SET & IMP
+    WO & PM & REQ & AST & LOC & INV --> DG
+    WO & AST --> FORM
+</div></code></pre>
+<h3 id="state-management--redux-slices">State Management — Redux Slices</h3>
+<pre><code class="language-mermaid"><div class="mermaid">graph LR
+    subgraph "Redux Store (rootReducer)"
+        direction TB
+        S1["workOrders"]
+        S2["assets"]
+        S3["requests"]
+        S4["preventiveMaintenances"]
+        S5["locations"]
+        S6["parts / multiParts"]
+        S7["meters / readings"]
+        S8["purchaseOrders"]
+        S9["users / teams / roles"]
+        S10["vendors / customers"]
+        S11["notifications"]
+        S12["categories (7 types)"]
+        S13["files"]
+        S14["analytics (5 types)"]
+        S15["checklists / tasks"]
+        S16["workflows"]
+        S17["imports / exports"]
+        S18["subscriptionPlans / license"]
+    end
+</div></code></pre>
+<h3 id="frontend-routing-map">Frontend Routing Map</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Page</th>
+<th style="text-align:center">Auth Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>Landing / Overview</td>
+<td style="text-align:center">No</td>
+</tr>
+<tr>
+<td><code>/account/login</code></td>
+<td>Login</td>
+<td style="text-align:center">No</td>
+</tr>
+<tr>
+<td><code>/account/register</code></td>
+<td>Registration</td>
+<td style="text-align:center">No</td>
+</tr>
+<tr>
+<td><code>/account/recover-password</code></td>
+<td>Password Recovery</td>
+<td style="text-align:center">No</td>
+</tr>
+<tr>
+<td><code>/oauth2/success</code></td>
+<td>OAuth Callback</td>
+<td style="text-align:center">No</td>
+</tr>
+<tr>
+<td><code>/app/work-orders</code></td>
+<td>Work Orders List &amp; Detail</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/preventive-maintenances</code></td>
+<td>PM Schedules</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/requests</code></td>
+<td>Work Requests</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/assets</code></td>
+<td>Assets List &amp; Detail</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/locations</code></td>
+<td>Locations List &amp; Detail</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/inventory/parts</code></td>
+<td>Parts Inventory</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/inventory/sets</code></td>
+<td>Part Sets</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/purchase-orders</code></td>
+<td>Purchase Orders</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/meters</code></td>
+<td>Meters &amp; Readings</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/people-teams/people</code></td>
+<td>Users</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/people-teams/teams</code></td>
+<td>Teams</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/vendors-customers/vendors</code></td>
+<td>Vendors</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/vendors-customers/customers</code></td>
+<td>Customers</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/files</code></td>
+<td>File Management</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/categories</code></td>
+<td>Category Management</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/analytics/*</code></td>
+<td>Analytics Dashboards</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/settings/*</code></td>
+<td>System Settings</td>
+<td style="text-align:center">Yes</td>
+</tr>
+<tr>
+<td><code>/app/imports/*</code></td>
+<td>Bulk Import</td>
+<td style="text-align:center">Yes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-communication">API Communication</h3>
+<pre><code class="language-mermaid"><div class="mermaid">sequenceDiagram
+    participant Browser
+    participant React as React App
+    participant Redux as Redux Store
+    participant API as api.ts (fetch wrapper)
+    participant Backend as Spring Boot API
+
+    Browser->>React: User Action
+    React->>Redux: dispatch(thunk)
+    Redux->>API: api.get/post/patch/deletes(url, data)
+    API->>API: Add Authorization: Bearer <JWT>
+    API->>Backend: HTTP Request to :8080
+    Backend-->>API: JSON Response
+    API-->>Redux: Return typed data
+    Redux-->>React: State update
+    React-->>Browser: Re-render UI
+</div></code></pre>
+<p><strong>Base URL resolution:</strong></p>
+<ul>
+<li>Development: <code>http://localhost:8080/</code></li>
+<li>Production: <code>window.__RUNTIME_CONFIG__.API_URL</code> (injected at container startup via <code>runtime-env-cra</code>)</li>
+</ul>
+<hr>
+<h2 id="4-backend-architecture">4. Backend Architecture</h2>
+<h3 id="technology-stack">Technology Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>Spring Boot 3.2.3</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>Java 17</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td>Spring Data JPA + Hibernate 6</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>PostgreSQL 16</td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td>Liquibase 4.22</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>Spring Security + JWT (jjwt 0.11.5)</td>
+</tr>
+<tr>
+<td>File Storage</td>
+<td>MinIO (default) or Google Cloud Storage</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>SMTP (default) or SendGrid</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>Quartz</td>
+</tr>
+<tr>
+<td>Caching</td>
+<td>Caffeine</td>
+</tr>
+<tr>
+<td>Rate Limiting</td>
+<td>Bucket4j</td>
+</tr>
+<tr>
+<td>API Docs</td>
+<td>SpringDoc OpenAPI 2.5 (Swagger UI)</td>
+</tr>
+<tr>
+<td>PDF Generation</td>
+<td>iText + html2pdf</td>
+</tr>
+<tr>
+<td>Auditing</td>
+<td>Hibernate Envers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="backend-package-architecture">Backend Package Architecture</h3>
+<pre><code class="language-mermaid"><div class="mermaid">graph TB
+    subgraph "com.grash"
+        CTR["controller/"]
+        SVC["service/"]
+        MDL["model/"]
+        DTO["dto/"]
+        REPO["repository/"]
+        MAP["mapper/"]
+        CFG["configuration/"]
+        SEC["security/"]
+        JOB["job/"]
+        EVT["event/"]
+        ADV["advancedsearch/"]
+        FAC["factory/"]
+        EXC["exception/"]
+        UTL["utils/"]
+    end
+
+    CTR -->|"calls"| SVC
+    SVC -->|"uses"| REPO
+    SVC -->|"uses"| MAP
+    REPO -->|"persists"| MDL
+    CTR -->|"accepts/returns"| DTO
+    MAP -->|"converts"| MDL
+    MAP -->|"converts"| DTO
+    CFG -->|"configures"| SEC
+    SEC -->|"authenticates"| CTR
+    JOB -->|"scheduled tasks"| SVC
+    FAC -->|"creates"| SVC
+    ADV -->|"filters"| REPO
+</div></code></pre>
+<h3 id="service-layer--factory-pattern">Service Layer — Factory Pattern</h3>
+<pre><code class="language-mermaid"><div class="mermaid">graph LR
+    subgraph "Storage"
+        SF["StorageServiceFactory"]
+        MINIO_SVC["MinioService"]
+        GCP_SVC["GCPService"]
+    end
+
+    subgraph "Email"
+        MF["MailServiceFactory"]
+        SMTP["EmailService2 (SMTP)"]
+        SG["SendgridService"]
+    end
+
+    SF -->|"storage.type=minio"| MINIO_SVC
+    SF -->|"storage.type=gcp"| GCP_SVC
+    MF -->|"mail.type=SMTP"| SMTP
+    MF -->|"mail.type=SENDGRID"| SG
+</div></code></pre>
+<h3 id="scheduled-jobs-quartz">Scheduled Jobs (Quartz)</h3>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Schedule</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>WorkOrderCreationJob</code></td>
+<td>Cron-based</td>
+<td>Creates work orders from PM schedules</td>
+</tr>
+<tr>
+<td><code>PreventiveMaintenanceNotificationJob</code></td>
+<td>Cron-based</td>
+<td>Sends reminders for upcoming PM tasks</td>
+</tr>
+<tr>
+<td><code>SubscriptionEndJob</code></td>
+<td>Cron-based</td>
+<td>Handles subscription expiration</td>
+</tr>
+<tr>
+<td><code>DeleteDemoCompaniesJob</code></td>
+<td>Every 1 hour</td>
+<td>Cleans up demo company data</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="5-database-schema-entity-map">5. Database Schema (Entity Map)</h2>
+<h3 id="core-domain-entities">Core Domain Entities</h3>
+<pre><code class="language-mermaid"><div class="mermaid">erDiagram
+    Company ||--o{ OwnUser : "has users"
+    Company ||--o{ Asset : "has assets"
+    Company ||--o{ Location : "has locations"
+    Company ||--o{ WorkOrder : "has work orders"
+    Company ||--o{ Request : "has requests"
+    Company ||--o{ PreventiveMaintenance : "has PMs"
+    Company ||--o{ Part : "has parts"
+    Company ||--o{ Meter : "has meters"
+    Company ||--o{ Vendor : "has vendors"
+    Company ||--o{ Customer : "has customers"
+    Company ||--|| CompanySettings : "has settings"
+    Company ||--o| Subscription : "has subscription"
+
+    OwnUser }o--|| Role : "has role"
+    OwnUser }o--o{ Team : "belongs to"
+
+    Asset ||--o{ WorkOrder : "linked to"
+    Asset ||--o{ Meter : "monitored by"
+    Asset ||--o{ AssetDowntime : "tracks downtime"
+    Asset }o--o| Location : "located at"
+    Asset }o--o| Asset : "parent asset"
+    Asset }o--o{ Part : "uses parts"
+
+    Location }o--o| Location : "parent location"
+
+    WorkOrder ||--o{ Task : "has tasks"
+    WorkOrder ||--o{ Labor : "has labor"
+    WorkOrder ||--o{ AdditionalCost : "has costs"
+    WorkOrder ||--o{ PartQuantity : "consumes parts"
+    WorkOrder }o--o{ File : "has files"
+    WorkOrder }o--o| WorkOrderCategory : "categorized"
+    WorkOrder }o--o| OwnUser : "assigned to"
+    WorkOrder }o--o| Team : "assigned team"
+    WorkOrder }o--o| Location : "at location"
+
+    PreventiveMaintenance ||--o{ Schedule : "has schedules"
+    PreventiveMaintenance }o--o| Asset : "for asset"
+    PreventiveMaintenance }o--o| Location : "at location"
+
+    Meter ||--o{ Reading : "has readings"
+    Meter ||--o{ WorkOrderMeterTrigger : "triggers WOs"
+
+    Part }o--o| PartCategory : "categorized"
+    Part ||--o{ PartQuantity : "tracked in"
+
+    PurchaseOrder ||--o{ PartQuantity : "orders parts"
+    PurchaseOrder }o--o| Vendor : "from vendor"
+
+    Request }o--o| OwnUser : "created by"
+    Request }o--o| WorkOrder : "becomes WO"
+
+    Workflow ||--o{ WorkflowCondition : "has conditions"
+    Workflow ||--o{ WorkflowAction : "triggers actions"
+</div></code></pre>
+<h3 id="full-entity-list">Full Entity List</h3>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Company</strong></td>
+<td>Tenant / organization</td>
+</tr>
+<tr>
+<td><strong>CompanySettings</strong></td>
+<td>Company-level configuration</td>
+</tr>
+<tr>
+<td><strong>OwnUser</strong></td>
+<td>Application user</td>
+</tr>
+<tr>
+<td><strong>Role</strong></td>
+<td>User role with permissions</td>
+</tr>
+<tr>
+<td><strong>Team</strong></td>
+<td>Group of users</td>
+</tr>
+<tr>
+<td><strong>UserInvitation</strong></td>
+<td>Pending user invite</td>
+</tr>
+<tr>
+<td><strong>UserSettings</strong></td>
+<td>Per-user preferences</td>
+</tr>
+<tr>
+<td><strong>SuperAccountRelation</strong></td>
+<td>Cross-company access link</td>
+</tr>
+<tr>
+<td><strong>Asset</strong></td>
+<td>Physical asset / equipment</td>
+</tr>
+<tr>
+<td><strong>AssetCategory</strong></td>
+<td>Asset classification</td>
+</tr>
+<tr>
+<td><strong>AssetDowntime</strong></td>
+<td>Asset downtime record</td>
+</tr>
+<tr>
+<td><strong>Location</strong></td>
+<td>Physical location (hierarchical)</td>
+</tr>
+<tr>
+<td><strong>WorkOrder</strong></td>
+<td>Maintenance work order</td>
+</tr>
+<tr>
+<td><strong>WorkOrderCategory</strong></td>
+<td>Work order classification</td>
+</tr>
+<tr>
+<td><strong>WorkOrderConfiguration</strong></td>
+<td>WO field configuration</td>
+</tr>
+<tr>
+<td><strong>WorkOrderRequestConfiguration</strong></td>
+<td>Request form configuration</td>
+</tr>
+<tr>
+<td><strong>WorkOrderHistory</strong></td>
+<td>WO change audit trail</td>
+</tr>
+<tr>
+<td><strong>WorkOrderMeterTrigger</strong></td>
+<td>Meter-based WO trigger</td>
+</tr>
+<tr>
+<td><strong>Request</strong></td>
+<td>Work request (pre-WO)</td>
+</tr>
+<tr>
+<td><strong>PreventiveMaintenance</strong></td>
+<td>PM schedule definition</td>
+</tr>
+<tr>
+<td><strong>Schedule</strong></td>
+<td>Cron/calendar schedule</td>
+</tr>
+<tr>
+<td><strong>Task</strong> / <strong>TaskBase</strong> / <strong>TaskOption</strong></td>
+<td>Checklist tasks</td>
+</tr>
+<tr>
+<td><strong>Checklist</strong></td>
+<td>Reusable task checklist</td>
+</tr>
+<tr>
+<td><strong>Part</strong></td>
+<td>Inventory part</td>
+</tr>
+<tr>
+<td><strong>PartCategory</strong></td>
+<td>Part classification</td>
+</tr>
+<tr>
+<td><strong>PartQuantity</strong></td>
+<td>Part usage in WO/PO</td>
+</tr>
+<tr>
+<td><strong>PartConsumption</strong></td>
+<td>Part consumption record</td>
+</tr>
+<tr>
+<td><strong>MultiParts</strong></td>
+<td>Multi-part group</td>
+</tr>
+<tr>
+<td><strong>Meter</strong></td>
+<td>Equipment meter</td>
+</tr>
+<tr>
+<td><strong>MeterCategory</strong></td>
+<td>Meter classification</td>
+</tr>
+<tr>
+<td><strong>Reading</strong></td>
+<td>Meter reading value</td>
+</tr>
+<tr>
+<td><strong>PurchaseOrder</strong></td>
+<td>Parts purchase order</td>
+</tr>
+<tr>
+<td><strong>PurchaseOrderCategory</strong></td>
+<td>PO classification</td>
+</tr>
+<tr>
+<td><strong>Vendor</strong></td>
+<td>Parts/service vendor</td>
+</tr>
+<tr>
+<td><strong>Customer</strong></td>
+<td>Customer record</td>
+</tr>
+<tr>
+<td><strong>Labor</strong></td>
+<td>Labor time entry</td>
+</tr>
+<tr>
+<td><strong>AdditionalCost</strong></td>
+<td>Extra cost entry</td>
+</tr>
+<tr>
+<td><strong>CostCategory</strong> / <strong>TimeCategory</strong></td>
+<td>Cost/time classifications</td>
+</tr>
+<tr>
+<td><strong>File</strong></td>
+<td>Uploaded file metadata</td>
+</tr>
+<tr>
+<td><strong>FloorPlan</strong></td>
+<td>Location floor plan</td>
+</tr>
+<tr>
+<td><strong>Notification</strong></td>
+<td>In-app notification</td>
+</tr>
+<tr>
+<td><strong>PushNotificationToken</strong></td>
+<td>Mobile push token</td>
+</tr>
+<tr>
+<td><strong>Workflow</strong> / <strong>WorkflowAction</strong> / <strong>WorkflowCondition</strong></td>
+<td>Automation workflow</td>
+</tr>
+<tr>
+<td><strong>CustomField</strong></td>
+<td>Custom data field</td>
+</tr>
+<tr>
+<td><strong>FieldConfiguration</strong></td>
+<td>Field visibility config</td>
+</tr>
+<tr>
+<td><strong>GeneralPreferences</strong></td>
+<td>System preferences</td>
+</tr>
+<tr>
+<td><strong>UiConfiguration</strong></td>
+<td>UI display settings</td>
+</tr>
+<tr>
+<td><strong>Currency</strong></td>
+<td>Currency definition</td>
+</tr>
+<tr>
+<td><strong>Deprecation</strong></td>
+<td>Asset depreciation</td>
+</tr>
+<tr>
+<td><strong>Relation</strong></td>
+<td>Entity-to-entity link</td>
+</tr>
+<tr>
+<td><strong>Subscription</strong> / <strong>SubscriptionPlan</strong></td>
+<td>Billing subscription</td>
+</tr>
+<tr>
+<td><strong>SubscriptionChangeRequest</strong></td>
+<td>Plan change request</td>
+</tr>
+<tr>
+<td><strong>CustomSequence</strong></td>
+<td>Auto-numbering sequence</td>
+</tr>
+<tr>
+<td><strong>VerificationToken</strong></td>
+<td>Email verification token</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="6-api-endpoints-reference">6. API Endpoints Reference</h2>
+<h3 id="core-crud-resources">Core CRUD Resources</h3>
+<table>
+<thead>
+<tr>
+<th>Controller</th>
+<th>Base Path</th>
+<th>Methods</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AuthController</td>
+<td><code>/auth</code></td>
+<td>POST signin, POST signup, GET me, GET refresh, GET resetpwd, POST updatepwd, DELETE logout</td>
+</tr>
+<tr>
+<td>WorkOrderController</td>
+<td><code>/work-orders</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code>, status change, file management</td>
+</tr>
+<tr>
+<td>PreventiveMaintenanceController</td>
+<td><code>/preventive-maintenances</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code></td>
+</tr>
+<tr>
+<td>RequestController</td>
+<td><code>/requests</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code>, approve, cancel</td>
+</tr>
+<tr>
+<td>AssetController</td>
+<td><code>/assets</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code>, NFC/barcode lookup</td>
+</tr>
+<tr>
+<td>LocationController</td>
+<td><code>/locations</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code>, children</td>
+</tr>
+<tr>
+<td>PartController</td>
+<td><code>/parts</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code></td>
+</tr>
+<tr>
+<td>MeterController</td>
+<td><code>/meters</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code></td>
+</tr>
+<tr>
+<td>PurchaseOrderController</td>
+<td><code>/purchase-orders</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code>, respond</td>
+</tr>
+<tr>
+<td>VendorController</td>
+<td><code>/vendors</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code></td>
+</tr>
+<tr>
+<td>CustomerController</td>
+<td><code>/customers</code></td>
+<td>POST search, GET/POST/PATCH/DELETE <code>{id}</code></td>
+</tr>
+<tr>
+<td>UserController</td>
+<td><code>/users</code></td>
+<td>POST search, POST invite, PATCH <code>{id}</code>, disable, soft-delete</td>
+</tr>
+<tr>
+<td>TeamController</td>
+<td><code>/teams</code></td>
+<td>POST search, GET mini</td>
+</tr>
+<tr>
+<td>FileController</td>
+<td><code>/files</code></td>
+<td>POST upload, POST search, GET/PATCH/DELETE <code>{id}</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="supporting-resources">Supporting Resources</h3>
+<table>
+<thead>
+<tr>
+<th>Controller</th>
+<th>Base Path</th>
+<th>Key Operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TaskController</td>
+<td><code>/tasks</code></td>
+<td>CRUD per work order or PM</td>
+</tr>
+<tr>
+<td>LaborController</td>
+<td><code>/labors</code></td>
+<td>CRUD per work order</td>
+</tr>
+<tr>
+<td>AdditionalCostController</td>
+<td><code>/additional-costs</code></td>
+<td>CRUD per work order</td>
+</tr>
+<tr>
+<td>PartQuantityController</td>
+<td><code>/part-quantities</code></td>
+<td>CRUD per work order or PO</td>
+</tr>
+<tr>
+<td>ReadingController</td>
+<td><code>/readings</code></td>
+<td>CRUD per meter</td>
+</tr>
+<tr>
+<td>AssetDowntimeController</td>
+<td><code>/asset-downtimes</code></td>
+<td>CRUD per asset</td>
+</tr>
+<tr>
+<td>WorkOrderMeterTriggerController</td>
+<td><code>/work-order-meter-triggers</code></td>
+<td>CRUD per meter</td>
+</tr>
+<tr>
+<td>NotificationController</td>
+<td><code>/notifications</code></td>
+<td>List, search, read-all, push token</td>
+</tr>
+<tr>
+<td>RoleController</td>
+<td><code>/roles</code></td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td>WorkflowController</td>
+<td><code>/workflows</code></td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td>ChecklistController</td>
+<td><code>/checklists</code></td>
+<td>CRUD</td>
+</tr>
+</tbody>
+</table>
+<h3 id="category-resources-all-crud">Category Resources (all CRUD)</h3>
+<p><code>/asset-categories</code>, <code>/part-categories</code>, <code>/work-order-categories</code>, <code>/purchase-order-categories</code>, <code>/meter-categories</code>, <code>/cost-categories</code>, <code>/time-categories</code></p>
+<h3 id="configuration--settings">Configuration &amp; Settings</h3>
+<table>
+<thead>
+<tr>
+<th>Controller</th>
+<th>Base Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CompanyController</td>
+<td><code>/companies</code></td>
+</tr>
+<tr>
+<td>CompanySettingsController</td>
+<td><code>/company-settings</code></td>
+</tr>
+<tr>
+<td>GeneralPreferencesController</td>
+<td><code>/general-preferences</code></td>
+</tr>
+<tr>
+<td>WorkOrderConfigurationController</td>
+<td><code>/work-order-configurations</code></td>
+</tr>
+<tr>
+<td>WorkOrderRequestConfigurationController</td>
+<td><code>/work-order-request-configurations</code></td>
+</tr>
+<tr>
+<td>FieldConfigurationController</td>
+<td><code>/field-configurations</code></td>
+</tr>
+<tr>
+<td>UiConfigurationController</td>
+<td><code>/ui-configurations</code></td>
+</tr>
+<tr>
+<td>UserSettingsController</td>
+<td><code>/user-settings</code></td>
+</tr>
+<tr>
+<td>CurrencyController</td>
+<td><code>/currencies</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="analytics">Analytics</h3>
+<table>
+<thead>
+<tr>
+<th>Controller</th>
+<th>Base Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WOAnalyticsController</td>
+<td><code>/analytics/work-orders</code></td>
+</tr>
+<tr>
+<td>AssetAnalyticsController</td>
+<td><code>/analytics/assets</code></td>
+</tr>
+<tr>
+<td>PartAnalyticsController</td>
+<td><code>/analytics/parts</code></td>
+</tr>
+<tr>
+<td>RequestAnalyticsController</td>
+<td><code>/analytics/requests</code></td>
+</tr>
+<tr>
+<td>UserAnalyticsController</td>
+<td><code>/analytics/users</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="system--admin">System / Admin</h3>
+<table>
+<thead>
+<tr>
+<th>Controller</th>
+<th>Base Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ImportController</td>
+<td><code>/import</code></td>
+<td>Bulk CSV import</td>
+</tr>
+<tr>
+<td>ExportController</td>
+<td><code>/export</code></td>
+<td>CSV/Excel export</td>
+</tr>
+<tr>
+<td>HealthCheckController</td>
+<td><code>/health-check</code></td>
+<td>Liveness probe</td>
+</tr>
+<tr>
+<td>LicenseController</td>
+<td><code>/license/state</code></td>
+<td>License validation</td>
+</tr>
+<tr>
+<td>PaddleController</td>
+<td><code>/paddle</code></td>
+<td>Payment management</td>
+</tr>
+<tr>
+<td>WebhookController</td>
+<td><code>/webhooks/paddle-webhook</code></td>
+<td>Payment webhooks</td>
+</tr>
+<tr>
+<td>DemoController</td>
+<td><code>/demo</code></td>
+<td>Demo data generation</td>
+</tr>
+<tr>
+<td>SwaggerAccessController</td>
+<td><code>/swagger/swagger-session</code></td>
+<td>Swagger auth session</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="7-authentication--security-flow">7. Authentication &amp; Security Flow</h2>
+<pre><code class="language-mermaid"><div class="mermaid">sequenceDiagram
+    participant User
+    participant Frontend
+    participant API as Spring Boot API
+    participant DB as PostgreSQL
+
+    Note over User,DB: Standard Login Flow
+    User->>Frontend: Enter email + password
+    Frontend->>API: POST /auth/signin {email, password}
+    API->>DB: Verify credentials (BCrypt)
+    DB-->>API: User record
+    API-->>Frontend: {accessToken (JWT)}
+    Frontend->>Frontend: Store token in localStorage
+
+    Note over User,DB: Authenticated Request
+    User->>Frontend: Navigate to /app/work-orders
+    Frontend->>API: GET /work-orders<br/>Authorization: Bearer <JWT>
+    API->>API: JwtTokenFilter validates token
+    API->>DB: Fetch data (filtered by company)
+    DB-->>API: Results
+    API-->>Frontend: JSON response
+    Frontend-->>User: Render data
+
+    Note over User,DB: OAuth2 SSO (Optional)
+    User->>Frontend: Click "Sign in with Google"
+    Frontend->>API: Redirect to /oauth2/authorization/google
+    API->>API: OAuth2 flow with provider
+    API-->>Frontend: Redirect to /oauth2/success?token=<JWT>
+    Frontend->>Frontend: Store token
+</div></code></pre>
+<h3 id="security-layers">Security Layers</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Transport</strong></td>
+<td>HTTPS (via reverse proxy)</td>
+</tr>
+<tr>
+<td><strong>Authentication</strong></td>
+<td>JWT tokens (stateless sessions)</td>
+</tr>
+<tr>
+<td><strong>Authorization</strong></td>
+<td>Role-based (RBAC) with <code>@PreAuthorize</code></td>
+</tr>
+<tr>
+<td><strong>Data Isolation</strong></td>
+<td>Company-scoped queries on every request</td>
+</tr>
+<tr>
+<td><strong>Password Storage</strong></td>
+<td>BCrypt (strength 12)</td>
+</tr>
+<tr>
+<td><strong>Rate Limiting</strong></td>
+<td>Bucket4j</td>
+</tr>
+<tr>
+<td><strong>CORS</strong></td>
+<td>Configurable via <code>ENABLE_CORS</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="permission-model">Permission Model</h3>
+<p>Roles contain granular permissions for each entity type:</p>
+<ul>
+<li><code>createPermissions</code> — create access per entity</li>
+<li><code>viewPermissions</code> — read access per entity (own-only or all)</li>
+<li><code>editOtherPermissions</code> — edit others' records</li>
+<li><code>deleteOtherPermissions</code> — delete others' records</li>
+</ul>
+<hr>
+<h2 id="8-data-flow">8. Data Flow</h2>
+<h3 id="work-order-lifecycle">Work Order Lifecycle</h3>
+<pre><code class="language-mermaid"><div class="mermaid">stateDiagram-v2
+    [*] --> OPEN: Created (manual or from PM/Request)
+    OPEN --> IN_PROGRESS: Technician starts work
+    IN_PROGRESS --> ON_HOLD: Waiting for parts/info
+    ON_HOLD --> IN_PROGRESS: Resume
+    IN_PROGRESS --> COMPLETE: Work finished
+    COMPLETE --> [*]
+
+    OPEN --> REACTIVE: --
+    note right of OPEN: Workflows can auto-assign,<br/>send notifications,<br/>change priority
+</div></code></pre>
+<h3 id="request-%E2%86%92-work-order-flow">Request → Work Order Flow</h3>
+<pre><code class="language-mermaid"><div class="mermaid">flowchart LR
+    A["Requester submits<br/>work request"] --> B{"Manager<br/>reviews"}
+    B -->|"Approve"| C["Work Order<br/>created"]
+    B -->|"Reject/Cancel"| D["Request<br/>cancelled"]
+    C --> E["Assigned to<br/>technician"]
+</div></code></pre>
+<h3 id="preventive-maintenance-automation">Preventive Maintenance Automation</h3>
+<pre><code class="language-mermaid"><div class="mermaid">flowchart TB
+    PM["PM Schedule Defined"] --> QUARTZ["Quartz Scheduler<br/>WorkOrderCreationJob"]
+    METER["Meter Reading<br/>Exceeds Threshold"] --> TRIGGER["WorkOrderMeterTrigger"]
+    QUARTZ --> WO["Work Order<br/>Auto-Created"]
+    TRIGGER --> WO
+    WO --> NOTIFY["Notifications Sent<br/>(Email + Push + In-App)"]
+</div></code></pre>
+<hr>
+<h2 id="9-deployment-architecture">9. Deployment Architecture</h2>
+<h3 id="production-docker-compose">Production (Docker Compose)</h3>
+<pre><code class="language-mermaid"><div class="mermaid">graph TB
+    subgraph "Reverse Proxy (NGINX Proxy Manager)"
+        NPM["NGINX Proxy Manager"]
+    end
+
+    subgraph "Docker Host"
+        FE["Frontend :3000"]
+        API["API :8080"]
+        PG["PostgreSQL :5432"]
+        MN["MinIO :9000"]
+    end
+
+    Internet["Internet"] -->|"HTTPS"| NPM
+    NPM -->|"maint.domain.com → :3000"| FE
+    NPM -->|"maintapi.domain.com → :8080"| API
+    NPM -->|"maintminio.domain.com → :9000"| MN
+</div></code></pre>
+<h3 id="local-development">Local Development</h3>
+<pre><code class="language-mermaid"><div class="mermaid">graph TB
+    DEV["dev-start.ps1"] -->|"docker compose up"| PG["PostgreSQL :5432"]
+    DEV -->|"docker compose up"| MN["MinIO :9000"]
+    DEV -->|"mvnw spring-boot:run"| API["API :8080<br/>(native Java)"]
+    DEV -->|"npm start"| FE["Frontend :3000<br/>(webpack dev server)"]
+</div></code></pre>
+<p>Run <code>dev-start.ps1</code> to start all services locally. Run <code>dev-stop.ps1</code> to stop them.</p>
+<hr>
+<h2 id="10-port-reference">10. Port Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Service</th>
+<th>Protocol</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3000</td>
+<td>Frontend (Nginx)</td>
+<td>HTTP</td>
+<td>React SPA</td>
+</tr>
+<tr>
+<td>8080</td>
+<td>Backend API</td>
+<td>HTTP</td>
+<td>Spring Boot REST + Swagger UI</td>
+</tr>
+<tr>
+<td>5432</td>
+<td>PostgreSQL</td>
+<td>TCP</td>
+<td>Database</td>
+</tr>
+<tr>
+<td>9000</td>
+<td>MinIO API</td>
+<td>HTTP</td>
+<td>S3-compatible object storage</td>
+</tr>
+<tr>
+<td>9001</td>
+<td>MinIO Console</td>
+<td>HTTP</td>
+<td>Web-based admin UI</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-urls">Key URLs</h3>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>http://localhost:3000</code></td>
+<td>Frontend application</td>
+</tr>
+<tr>
+<td><code>http://localhost:8080</code></td>
+<td>Backend API</td>
+</tr>
+<tr>
+<td><code>http://localhost:8080/swagger-ui/index.html</code></td>
+<td>Swagger API documentation</td>
+</tr>
+<tr>
+<td><code>http://localhost:9001</code></td>
+<td>MinIO admin console</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="appendix-environment-variables">Appendix: Environment Variables</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Service</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POSTGRES_USER</code></td>
+<td>PostgreSQL</td>
+<td>Database username</td>
+</tr>
+<tr>
+<td><code>POSTGRES_PWD</code></td>
+<td>PostgreSQL</td>
+<td>Database password</td>
+</tr>
+<tr>
+<td><code>MINIO_USER</code></td>
+<td>MinIO</td>
+<td>MinIO root username</td>
+</tr>
+<tr>
+<td><code>MINIO_PASSWORD</code></td>
+<td>MinIO</td>
+<td>MinIO root password</td>
+</tr>
+<tr>
+<td><code>JWT_SECRET_KEY</code></td>
+<td>API</td>
+<td>Secret for signing JWT tokens</td>
+</tr>
+<tr>
+<td><code>PUBLIC_API_URL</code></td>
+<td>API + Frontend</td>
+<td>Public-facing API URL</td>
+</tr>
+<tr>
+<td><code>PUBLIC_FRONT_URL</code></td>
+<td>API</td>
+<td>Public-facing frontend URL</td>
+</tr>
+<tr>
+<td><code>PUBLIC_MINIO_ENDPOINT</code></td>
+<td>API + Frontend</td>
+<td>Public-facing MinIO URL</td>
+</tr>
+<tr>
+<td><code>STORAGE_TYPE</code></td>
+<td>API</td>
+<td><code>minio</code> or <code>gcp</code></td>
+</tr>
+<tr>
+<td><code>ENABLE_CORS</code></td>
+<td>API</td>
+<td>Enable CORS headers</td>
+</tr>
+<tr>
+<td><code>ENABLE_EMAIL_NOTIFICATIONS</code></td>
+<td>API</td>
+<td>Enable email sending</td>
+</tr>
+<tr>
+<td><code>MAIL_TYPE</code></td>
+<td>API</td>
+<td><code>SMTP</code> or <code>SENDGRID</code></td>
+</tr>
+<tr>
+<td><code>LICENSE_KEY</code></td>
+<td>API</td>
+<td>Product license key</td>
+</tr>
+<tr>
+<td><code>ENABLE_SSO</code></td>
+<td>Frontend</td>
+<td>Enable OAuth2 SSO buttons</td>
+</tr>
+<tr>
+<td><code>API_URL</code></td>
+<td>Frontend</td>
+<td>Backend API URL for frontend</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

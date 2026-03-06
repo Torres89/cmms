@@ -44,9 +44,9 @@ import { getCategories } from '../../../../slices/category';
 import SelectPartQuantities from './SelectPartQuantities';
 import { getRoles } from '../../../../slices/role';
 import { getCurrencies } from '../../../../slices/currency';
-import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers-pro';
-import { AdapterDayjs } from '@mui/x-date-pickers-pro/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import useAuth from '../../../../hooks/useAuth';
 import DeleteTwoToneIcon from '@mui/icons-material/DeleteTwoTone';
 import ClearTwoToneIcon from '@mui/icons-material/ClearTwoTone';
@@ -224,23 +224,28 @@ export default (props: PropsType) => {
                       <Box pb={1}>
                         <b>{field.label}:</b>
                       </Box>
-                      <LocalizationProvider
-                        localeText={{ start: t('start'), end: t('end') }}
-                        dateAdapter={AdapterDayjs}
-                      >
-                        <DateRangePicker
-                          value={formik.values[field.name] ?? [null, null]}
-                          onChange={(newValue) => {
-                            handleChange(formik, field.name, newValue);
-                          }}
-                          renderInput={(startProps, endProps) => (
-                            <>
-                              <TextField {...startProps} />
-                              <Box sx={{ mx: 2 }}> {t('to')} </Box>
-                              <TextField {...endProps} />
-                            </>
-                          )}
-                        />
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <DatePicker
+                            label={t('start')}
+                            value={formik.values[field.name]?.[0] ?? null}
+                            onChange={(newValue) => {
+                              const end = formik.values[field.name]?.[1] ?? null;
+                              handleChange(formik, field.name, [newValue, end]);
+                            }}
+                            renderInput={(params) => <TextField {...params} />}
+                          />
+                          <Box sx={{ mx: 1 }}>{t('to')}</Box>
+                          <DatePicker
+                            label={t('end')}
+                            value={formik.values[field.name]?.[1] ?? null}
+                            onChange={(newValue) => {
+                              const start = formik.values[field.name]?.[0] ?? null;
+                              handleChange(formik, field.name, [start, newValue]);
+                            }}
+                            renderInput={(params) => <TextField {...params} />}
+                          />
+                        </Box>
                       </LocalizationProvider>
                     </Box>
                   ) : field.type === 'coordinates' ? (
