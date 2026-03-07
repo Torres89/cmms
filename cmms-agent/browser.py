@@ -18,6 +18,11 @@ ENTITY_URL_MAP = {
     "part": "/app/inventory/parts/{id}",
     "work_order": "/app/work-orders/{id}",
     "asset": "/app/assets/{id}",
+    "location": "/app/locations",
+    "vendor": "/app/vendors-customers/vendors/{id}",
+    "team": "/app/people-teams/teams/{id}",
+    "person": "/app/people-teams/people/{id}",
+    "preventive_maintenance": "/app/preventive-maintenances/{id}",
 }
 
 

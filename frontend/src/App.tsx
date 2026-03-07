@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { UtmTrackerProvider } from '@nik0di3m/utm-tracker-hook';
 import { useLicenseEntitlement } from './hooks/useLicenseEntitlement';
 import { initializePaddle } from '@paddle/paddle-js';
+import ChatBubble from './components/ChatBubble';
 
 if (!IS_LOCALHOST && googleTrackingId) ReactGA.initialize(googleTrackingId);
 
@@ -186,6 +187,7 @@ function App() {
               <CompanySettingsProvider>
                 <CssBaseline />
                 {isInitialized ? content : <AppInit />}
+                {isAuthenticated && <ChatBubble />}
                 {user && company?.demo && <DemoAlert />}
                 <DemoCleaningAlert />
               </CompanySettingsProvider>
@@ -197,3 +199,4 @@ function App() {
   );
 }
 export default App;
+

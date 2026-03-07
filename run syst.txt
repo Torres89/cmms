@@ -1,3 +1,5 @@
-docker compose stop api frontend
+docker compose stop api frontend agent
 docker compose up -d postgres minio
+docker compose build agent frontend
+docker compose up -d
 docker compose ps

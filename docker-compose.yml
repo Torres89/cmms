@@ -12,7 +12,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   api:
-    image: intelloop/atlas-cmms-backend
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: atlas-cmms-backend:local
     container_name: atlas-cmms-backend
     depends_on:
       - postgres
@@ -67,7 +70,10 @@ services:
     ports:
       - "8080:8080"
   frontend:
-    image: intelloop/atlas-cmms-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: atlas-cmms-frontend:local
     container_name: atlas-cmms-frontend
     environment:
         API_URL: ${PUBLIC_API_URL}
@@ -85,8 +91,25 @@ services:
         DEMO_LINK: ${DEMO_LINK:- }
         PADDLE_SECRET_TOKEN: ${PADDLE_SECRET_TOKEN:- }
         PADDLE_ENVIRONMENT: ${PADDLE_ENVIRONMENT:-sandbox}
+        AGENT_URL: http://localhost:8001
     ports:
       - "3000:3000"
+    depends_on:
+      - api
+      - agent
+  agent:
+    build:
+      context: ./cmms-agent
+      dockerfile: Dockerfile
+    image: atlas-cmms-agent:local
+    container_name: atlas-cmms-agent
+    env_file:
+      - ./cmms-agent/.env
+    environment:
+      - CMMS_API_URL=http://api:8080
+      - CMMS_FRONT_URL=http://localhost:3000
+    ports:
+      - "8001:8001"
     depends_on:
       - api
   minio:

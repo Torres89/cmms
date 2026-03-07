@@ -95,3 +95,5 @@ export const PADDLE_SECRET_TOKEN: string = getRuntimeValue(
 export const paddleEnvironment = getRuntimeValue('PADDLE_ENVIRONMENT') as
   | 'sandbox'
   | 'production';
+
+export const agentUrl = getRuntimeValue('AGENT_URL', 'http://localhost:8001');

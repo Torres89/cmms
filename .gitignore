@@ -8,3 +8,8 @@
 atlas_backups
 docker-compose-dev.yml
 logo
+deep-research-report.html
+deep-research-report.md
+docs/plans/
+# cmms-agent env
+cmms-agent/.env
