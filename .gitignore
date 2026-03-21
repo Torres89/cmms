@@ -1,4 +1,5 @@
 .env
+.env.prod
 .env.local
 **/.env.local
 .env.genaiscript
@@ -13,3 +14,6 @@ deep-research-report.md
 docs/plans/
 # cmms-agent env
 cmms-agent/.env
+
+# AWS keypairs (sensitive)
+keypair/
