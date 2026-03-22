@@ -1,0 +1,51 @@
+name: atlas-cmms
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - api
+      - agent
+      - minio
+
+  # In production, we pull from the GitHub Container Registry 
+  # instead of building on the EC2 instance to save memory.
+  api:
+    image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-backend:latest
+    build:
+      context: .
+      dockerfile: /dev/null # Disables build in newer compose versions if pulled
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-frontend:latest
+    restart: unless-stopped
+    environment:
+      AGENT_URL: ${AGENT_URL}
+
+  agent:
+    image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-agent:latest
+    restart: unless-stopped
+    environment:
+      - CMMS_API_URL=http://api:8080
+      - CMMS_FRONT_URL=${PUBLIC_FRONT_URL}
+
+  postgres:
+    restart: unless-stopped
+
+  minio:
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
