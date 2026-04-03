@@ -19,10 +19,6 @@ const LoginBasic = Loader(
   lazy(() => import('../content/pages/Auth/Login/Basic'))
 );
 
-const RegisterCover = Loader(
-  lazy(() => import('../content/pages/Auth/Register/Cover'))
-);
-
 const RecoverPassword = Loader(
   lazy(() => import('../content/pages/Auth/RecoverPassword'))
 );
@@ -49,14 +45,6 @@ const accountRoutes = [
   {
     path: 'verify',
     element: <VerifyEmail />
-  },
-  {
-    path: 'register',
-    element: (
-      <Guest>
-        <RegisterCover />
-      </Guest>
-    )
   }
 ];
 

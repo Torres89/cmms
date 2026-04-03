@@ -17,3 +17,6 @@ cmms-agent/.env
 
 # AWS keypairs (sensitive)
 keypair/
+
+# Local Claude Code skills (project-specific, not shared)
+.claude/

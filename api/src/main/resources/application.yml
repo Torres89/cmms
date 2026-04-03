@@ -137,3 +137,10 @@ sendgrid:
   contact-list-id: ${SENDGRID_CONTACT_LIST_ID:}
   from:
     email: ${SENDGRID_FROM_EMAIL:}
+
+registration:
+  disable: ${DISABLE_PUBLIC_REGISTRATION:true}
+admin:
+  email: ${ADMIN_EMAIL:}
+  password: ${ADMIN_PASSWORD:}
+  company-name: ${ADMIN_COMPANY_NAME:Default Company}

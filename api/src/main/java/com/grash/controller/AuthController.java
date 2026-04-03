@@ -49,6 +49,8 @@ public class AuthController {
     private final UserRepository userRepository;
     @Value("${frontend.url}")
     private String frontendUrl;
+    @Value("${registration.disable:true}")
+    private boolean disablePublicRegistration;
 
     @PostMapping(
             path = "/signin",
@@ -69,6 +71,9 @@ public class AuthController {
                     MediaType.APPLICATION_JSON_VALUE
             })
     public SignupSuccessResponse<UserResponseDTO> signup(@Valid @RequestBody UserSignupRequest user) {
+        if (disablePublicRegistration && user.getRole() == null) {
+            throw new CustomException("Public registration is disabled", HttpStatus.FORBIDDEN);
+        }
         SignupSuccessResponse<OwnUser> response = userService.signup(user);
         return new SignupSuccessResponse<>(response.isSuccess(), response.getMessage(),
                 userMapper.toResponseDto(response.getUser()));

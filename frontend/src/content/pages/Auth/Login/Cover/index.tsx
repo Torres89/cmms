@@ -1,5 +1,4 @@
-import { Link as RouterLink } from 'react-router-dom';
-import { Box, Card, Container, Link, styled, Typography } from '@mui/material';
+import { Box, Card, Container, styled, Typography } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
 import JWTLogin from '../LoginJWT';
 
@@ -60,21 +59,6 @@ function LoginCover() {
               </Typography>
             </Box>
             <JWTLogin />
-            <Box my={4}>
-              <Typography
-                component="span"
-                variant="subtitle2"
-                color="text.primary"
-                fontWeight="bold"
-              >
-                {t('no_account_yet')}
-              </Typography>{' '}
-              <Box display={{ xs: 'block', md: 'inline-block' }}>
-                <Link component={RouterLink} to="/account/register">
-                  <b>{t('signup_here')}</b>
-                </Link>
-              </Box>
-            </Box>
           </Card>
         </Container>
       </Content>
