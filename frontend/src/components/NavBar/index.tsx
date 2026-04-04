@@ -582,9 +582,7 @@ export default function NavBar() {
                         timeout={{ enter: 500 }}
                       >
                         <ListItem sx={{ py: 2 }}>
-                          <LanguageSwitcher
-                            onSwitch={() => setAnchorEl(null)}
-                          />
+                          <LanguageSwitcher />
                         </ListItem>
                       </Slide>
                     </List>
