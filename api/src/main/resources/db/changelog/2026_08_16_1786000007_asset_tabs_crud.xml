@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Making the asset dossier tabs writable.
+
+      Two data changes are needed for that; everything else is frontend.
+      See docs/plans/2026-08-16-asset-tabs-crud-design.md.
+    -->
+
+    <!--
+      When a failure actually happened, as opposed to when someone typed it in.
+
+      Until now those were the same date, so a failure recorded a week after the
+      event landed on the day it was entered. MTBF is nothing but the spacing
+      between these dates, so the number was wrong in exactly the case that
+      matters - a technician catching up on paperwork. Nullable, because the
+      rows written before this column exists have no better answer than their
+      created_at, and every reader falls back to it.
+    -->
+    <changeSet id="1786000007-1" author="machine-specialist-platform">
+        <addColumn tableName="failure_event">
+            <column name="occurred_at" type="timestamp"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Envers audits failure_event, so its shadow table needs the column too. -->
+    <changeSet id="1786000007-2" author="machine-specialist-platform">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="failure_event_aud"/>
+        </preConditions>
+        <addColumn tableName="failure_event_aud">
+            <column name="occurred_at" type="timestamp"/>
+        </addColumn>
+    </changeSet>
+
+    <!--
+      Existing rows: the only honest answer is when they were recorded.
+    -->
+    <changeSet id="1786000007-3" author="machine-specialist-platform">
+        <sql>UPDATE failure_event SET occurred_at = created_at WHERE occurred_at IS NULL</sql>
+    </changeSet>
+
+    <!--
+      Retire the Parts tab by moving what it held into the bill of materials.
+
+      The Parts tab was backed by T_Asset_Part_Associations and the Parts &amp; BOM
+      tab by asset_bom_line, and the two never agreed - a BOM line did not make
+      the part show up on the asset, and a part attached to an asset did not
+      appear on its BOM. The BOM wins because it carries quantity, position and
+      replacement interval; the association table carries nothing.
+
+      Backfilled here so that removing the tab loses no data. Going forward
+      AssetBomService writes both, so the association table stays the index that
+      Inventory reads and the BOM stays the record.
+    -->
+    <!--
+      Ids come from max(id) + row_number rather than nextval.
+
+      asset_bom_line_seq increments by 50 because Hibernate allocates ids in
+      pooled blocks, so a raw nextval here would hand back a block boundary that
+      Hibernate later hands out again. The sequence is pushed past the inserted
+      rows in the next changeSet instead; migrations run before the application
+      serves traffic, so there is no in-memory block to invalidate.
+    -->
+    <changeSet id="1786000007-4" author="machine-specialist-platform">
+        <sql>
+            INSERT INTO asset_bom_line (id, company_id, created_at, updated_at, created_by, updated_by,
+                                        asset_id, part_id, qty_per_assembly, consumable, notes)
+            SELECT (SELECT COALESCE(MAX(id), 0) FROM asset_bom_line) + row_number() OVER (),
+                   a.company_id,
+                   now(),
+                   now(),
+                   NULL,
+                   NULL,
+                   assoc.id_asset,
+                   assoc.id_part,
+                   1,
+                   false,
+                   'Migrated from the asset parts list'
+            FROM t_asset_part_associations assoc
+                     JOIN asset a ON a.id = assoc.id_asset
+            WHERE NOT EXISTS (SELECT 1
+                              FROM asset_bom_line existing
+                              WHERE existing.asset_id = assoc.id_asset
+                                AND existing.part_id = assoc.id_part)
+        </sql>
+    </changeSet>
+
+    <changeSet id="1786000007-5" author="machine-specialist-platform">
+        <sql>
+            SELECT setval('asset_bom_line_seq',
+                          GREATEST((SELECT COALESCE(MAX(id), 0) FROM asset_bom_line) + 50,
+                                   (SELECT last_value FROM asset_bom_line_seq)))
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

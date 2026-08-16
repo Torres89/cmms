@@ -182,4 +182,18 @@
              relativeToChangelogFile="true"/>
     <include file="changelog/2026_02_03_1770129474_csv_sep_settings.xml"
              relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_15_1786000001_agent_sessions.xml"
+             relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_15_1786000002_machine_dossier.xml"
+             relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_15_1786000003_knowledge_layer.xml"
+             relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_15_1786000004_telemetry.xml"
+             relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_16_1786000005_fault_code_reference.xml"
+             relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_16_1786000006_meter_usage_basis.xml"
+             relativeToChangelogFile="true"/>
+    <include file="changelog/2026_08_16_1786000007_asset_tabs_crud.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>
