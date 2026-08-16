@@ -1,17 +1,20 @@
-import { FC, useContext, useEffect, useMemo, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
+  Button,
   Card,
   Chip,
   CircularProgress,
   Divider,
+  IconButton,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   useTheme
 } from '@mui/material';
@@ -19,45 +22,21 @@ import { useTranslation } from 'react-i18next';
 import BuildTwoToneIcon from '@mui/icons-material/BuildTwoTone';
 import ReportProblemTwoToneIcon from '@mui/icons-material/ReportProblemTwoTone';
 import SwapHorizTwoToneIcon from '@mui/icons-material/SwapHorizTwoTone';
+import AddTwoToneIcon from '@mui/icons-material/AddTwoTone';
+import EditTwoToneIcon from '@mui/icons-material/EditTwoTone';
+import DeleteTwoToneIcon from '@mui/icons-material/DeleteTwoTone';
+import ListAltTwoToneIcon from '@mui/icons-material/ListAltTwoTone';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../../utils/api';
-import { CustomSnackBarContext } from '../../../../contexts/CustomSnackBarContext';
+import { FailureEvent } from '../../../../models/owns/dossier';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import useAssetHistory from './history/useAssetHistory';
+import FailureEventFormDialog from './history/FailureEventFormDialog';
+import FailureModesDialog from './history/FailureModesDialog';
 
 interface PropsType {
   assetId: number;
-}
-
-interface HistoryResponse {
-  workOrders: {
-    id: number;
-    title?: string;
-    status?: string;
-    priority?: string;
-    createdAt?: string;
-    completedOn?: string;
-    description?: string;
-  }[];
-  failureEvents: {
-    id: number;
-    code?: string;
-    name?: string;
-    occurredAt?: string;
-    cause?: string;
-    detectedAt?: string;
-    severity?: number;
-    downtimeMinutes?: number;
-    repairCost?: number;
-    correctiveAction?: string;
-  }[];
-  pareto: {
-    code: string;
-    name: string;
-    count: number;
-    downtimeMinutes: number;
-    repairCost: number;
-    mtbfDays?: number;
-    mttrMinutes?: number;
-  }[];
+  equipmentClass?: string;
+  canEdit?: boolean;
 }
 
 type TimelineEntry = {
@@ -68,70 +47,81 @@ type TimelineEntry = {
   detail?: string;
   chips: string[];
   link?: string;
+  failure?: FailureEvent;
 };
 
 /**
  * One timeline for the machine: work orders, failures and component swaps
  * together, because "what happened to this machine" is one question.
  *
- * The Pareto beneath it is the answer to the question that actually matters —
- * which failure modes are costing this machine its uptime.
+ * The Pareto beneath it answers the question that actually matters — which
+ * failure modes are costing this machine its uptime — and it is only as good as
+ * what gets written down, which is why recording a failure lives on this tab
+ * rather than somewhere a person would have to go looking for it.
  */
-const AssetTimeline: FC<PropsType> = ({ assetId }) => {
+const AssetTimeline: FC<PropsType> = ({
+  assetId,
+  equipmentClass,
+  canEdit = false
+}) => {
   const { t }: { t: any } = useTranslation();
   const theme = useTheme();
   const navigate = useNavigate();
-  const { showSnackBar } = useContext(CustomSnackBarContext);
-  const [history, setHistory] = useState<HistoryResponse | null>(null);
-  const [componentEvents, setComponentEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    history,
+    failures,
+    componentEvents,
+    modes,
+    components,
+    workOrders,
+    loading,
+    saveFailure,
+    deleteFailure,
+    saveMode,
+    deleteMode
+  } = useAssetHistory(assetId, equipmentClass);
 
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      api.get<HistoryResponse>(`assets/${assetId}/maintenance-history?limit=100`),
-      api
-        .get<any[]>(`components/position/${assetId}/history`)
-        .catch(() => [] as any[])
-    ])
-      .then(([loadedHistory, events]) => {
-        setHistory(loadedHistory);
-        setComponentEvents(events);
-      })
-      .catch(() => showSnackBar(t('could_not_load_history'), 'error'))
-      .finally(() => setLoading(false));
-  }, [assetId]);
+  const [editing, setEditing] = useState<{ event: FailureEvent | null } | null>(
+    null
+  );
+  const [modesOpen, setModesOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<FailureEvent | null>(null);
 
   const timeline: TimelineEntry[] = useMemo(() => {
-    if (!history) return [];
     const entries: TimelineEntry[] = [];
 
-    history.workOrders.forEach((workOrder) =>
+    (history?.workOrders ?? []).forEach((workOrder) =>
       entries.push({
         id: `wo-${workOrder.id}`,
         kind: 'WORK_ORDER',
         at: workOrder.createdAt,
         title: workOrder.title ?? `#${workOrder.id}`,
         detail: workOrder.description,
-        chips: [workOrder.status, workOrder.priority].filter(Boolean) as string[],
+        chips: [workOrder.status, workOrder.priority].filter(
+          Boolean
+        ) as string[],
         link: `/app/work-orders/${workOrder.id}`
       })
     );
 
-    history.failureEvents.forEach((failure) =>
+    failures.forEach((failure) =>
       entries.push({
         id: `fe-${failure.id}`,
         kind: 'FAILURE',
-        at: failure.occurredAt,
-        title: failure.name ?? failure.code ?? t('failure'),
-        detail: [failure.cause, failure.correctiveAction].filter(Boolean).join(' → '),
+        at: failure.occurredAt ?? failure.createdAt,
+        title: failure.failureMode?.nameEn ?? failure.failureMode?.code ?? t('failure'),
+        detail: [failure.cause, failure.correctiveAction]
+          .filter(Boolean)
+          .join(' → '),
         chips: [
-          failure.code,
-          failure.detectedAt,
+          failure.failureMode?.code,
+          failure.detectedAt ? t(failure.detectedAt) : null,
+          failure.severity ? `S${failure.severity}` : null,
           failure.downtimeMinutes
             ? `${Math.round(failure.downtimeMinutes / 60)} h ${t('down')}`
             : null
-        ].filter(Boolean) as string[]
+        ].filter(Boolean) as string[],
+        failure
       })
     );
 
@@ -143,6 +133,7 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
         title: `${t(event.type)} — ${event.component?.serialNumber ?? ''}`,
         detail: event.reason,
         chips: [
+          event.position?.name,
           event.positionMeterValue != null
             ? `${Math.round(event.positionMeterValue).toLocaleString()} h`
             : null
@@ -155,7 +146,7 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
       const bTime = b.at ? new Date(b.at).getTime() : 0;
       return bTime - aTime;
     });
-  }, [history, componentEvents, t]);
+  }, [history, failures, componentEvents, t]);
 
   if (loading) {
     return (
@@ -166,13 +157,37 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
   }
 
   const icon = (kind: TimelineEntry['kind']) => {
-    if (kind === 'FAILURE') return <ReportProblemTwoToneIcon color="error" fontSize="small" />;
-    if (kind === 'COMPONENT') return <SwapHorizTwoToneIcon color="info" fontSize="small" />;
+    if (kind === 'FAILURE')
+      return <ReportProblemTwoToneIcon color="error" fontSize="small" />;
+    if (kind === 'COMPONENT')
+      return <SwapHorizTwoToneIcon color="info" fontSize="small" />;
     return <BuildTwoToneIcon color="primary" fontSize="small" />;
   };
 
   return (
     <Stack spacing={2}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography variant="h6">{t('history')}</Typography>
+        {canEdit && (
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<ListAltTwoToneIcon />}
+              onClick={() => setModesOpen(true)}
+            >
+              {t('manage_failure_modes')}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddTwoToneIcon />}
+              onClick={() => setEditing({ event: null })}
+            >
+              {t('record_failure')}
+            </Button>
+          </Stack>
+        )}
+      </Stack>
+
       {history?.pareto?.length > 0 && (
         <Card sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
@@ -203,12 +218,18 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
                     {Math.round(row.downtimeMinutes / 60)} h
                   </TableCell>
                   <TableCell align="right">
-                    {row.mtbfDays != null ? `${Math.round(row.mtbfDays)} ${t('days')}` : '—'}
+                    {row.mtbfDays != null
+                      ? `${Math.round(row.mtbfDays)} ${t('days')}`
+                      : '—'}
                   </TableCell>
                   <TableCell align="right">
-                    {row.mttrMinutes != null ? `${Math.round(row.mttrMinutes)} min` : '—'}
+                    {row.mttrMinutes != null
+                      ? `${Math.round(row.mttrMinutes)} min`
+                      : '—'}
                   </TableCell>
-                  <TableCell align="right">{row.repairCost?.toFixed(2) ?? '—'}</TableCell>
+                  <TableCell align="right">
+                    {row.repairCost?.toFixed(2) ?? '—'}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -217,9 +238,6 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
       )}
 
       <Card sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          {t('history')}
-        </Typography>
         <Divider sx={{ mb: 1 }} />
         {!timeline.length ? (
           <Alert severity="info">{t('nothing_recorded_yet')}</Alert>
@@ -233,13 +251,19 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
               sx={{
                 py: 1,
                 borderBottom: `1px solid ${theme.colors.alpha.black[5]}`,
-                cursor: entry.link ? 'pointer' : 'default'
+                cursor: entry.link ? 'pointer' : 'default',
+                '&:hover .timeline-actions': { opacity: 1 }
               }}
               onClick={() => entry.link && navigate(entry.link)}
             >
               <Box sx={{ pt: 0.25 }}>{icon(entry.kind)}</Box>
               <Box sx={{ flex: 1 }}>
-                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  flexWrap="wrap"
+                >
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {entry.title}
                   </Typography>
@@ -259,6 +283,38 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
                   </Typography>
                 )}
               </Box>
+
+              {canEdit && entry.failure && (
+                <Stack
+                  direction="row"
+                  className="timeline-actions"
+                  sx={{ opacity: { xs: 1, md: 0 }, transition: 'opacity 150ms' }}
+                >
+                  <Tooltip title={t('edit_failure')}>
+                    <IconButton
+                      size="small"
+                      onClick={(clickEvent) => {
+                        clickEvent.stopPropagation();
+                        setEditing({ event: entry.failure });
+                      }}
+                    >
+                      <EditTwoToneIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('to_delete')}>
+                    <IconButton
+                      size="small"
+                      onClick={(clickEvent) => {
+                        clickEvent.stopPropagation();
+                        setPendingDelete(entry.failure);
+                      }}
+                    >
+                      <DeleteTwoToneIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              )}
+
               <Typography variant="caption" color="text.secondary">
                 {entry.at ? new Date(entry.at).toLocaleDateString() : ''}
               </Typography>
@@ -266,6 +322,44 @@ const AssetTimeline: FC<PropsType> = ({ assetId }) => {
           ))
         )}
       </Card>
+
+      <FailureEventFormDialog
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        event={editing?.event ?? null}
+        modes={modes}
+        components={components}
+        workOrders={workOrders}
+        equipmentClass={equipmentClass}
+        onManageModes={() => {
+          setEditing(null);
+          setModesOpen(true);
+        }}
+        onSubmit={(payload) =>
+          saveFailure(editing?.event?.id ?? null, payload)
+        }
+      />
+
+      <FailureModesDialog
+        open={modesOpen}
+        onClose={() => setModesOpen(false)}
+        modes={modes}
+        equipmentClass={equipmentClass}
+        onSave={saveMode}
+        onDelete={deleteMode}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) deleteFailure(target.id).catch(() => {});
+        }}
+        confirmText={t('to_delete')}
+        question={t('confirm_delete_failure')}
+      />
     </Stack>
   );
 };

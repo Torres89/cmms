@@ -139,7 +139,13 @@ const ShowAsset = ({}: PropsType) => {
       case 'documents':
         return <AssetDocuments asset={asset} canEdit={canEditAsset} />;
       case 'history':
-        return <AssetTimeline assetId={Number(assetId)} />;
+        return (
+          <AssetTimeline
+            assetId={Number(assetId)}
+            equipmentClass={asset?.equipmentClass}
+            canEdit={canEditAsset}
+          />
+        );
       case 'work-orders':
         return <AssetWorkOrders asset={asset} />;
       case 'meters':

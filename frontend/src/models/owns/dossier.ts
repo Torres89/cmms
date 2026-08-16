@@ -222,6 +222,49 @@ export interface ComponentInstance {
   notes?: string;
 }
 
+/** A catalogued way this class of machine breaks. */
+export interface FailureMode {
+  id: number;
+  equipmentClass?: string;
+  subunit?: string;
+  code: string;
+  nameEn: string;
+  nameEs?: string;
+  description?: string;
+  typicalMechanism?: string;
+  typicalCauses?: string;
+  detectionMethods?: string;
+  severityDefault?: number;
+  systemSeeded?: boolean;
+}
+
+export const detectionStages = [
+  'OPERATOR',
+  'PM_INSPECTION',
+  'CONDITION_MONITORING',
+  'BREAKDOWN'
+] as const;
+export type DetectionStage = typeof detectionStages[number];
+
+/** One occurrence: what broke on this machine, this time. */
+export interface FailureEvent {
+  id: number;
+  occurredAt?: string;
+  createdAt?: string;
+  failureMode?: FailureMode;
+  component?: { id: number; serialNumber?: string };
+  workOrder?: { id: number; title?: string };
+  mechanism?: string;
+  cause?: string;
+  detectionMethod?: string;
+  detectedAt?: DetectionStage;
+  severity?: number;
+  downtimeMinutes?: number;
+  repairCost?: number;
+  correctiveAction?: string;
+  preventiveRecommendation?: string;
+}
+
 /** The body every install / remove / overhaul / scrap POST takes. */
 export interface ComponentAction {
   positionAssetId?: number;
