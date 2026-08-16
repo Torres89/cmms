@@ -543,7 +543,10 @@ const ShowAsset = ({}: PropsType) => {
             {tabIndex === 0 ? (
               <AssetDetails asset={asset} loading={loadingGet} />
             ) : tabIndex === 1 ? (
-              <AssetStructure assetId={Number(assetId)} />
+              <AssetStructure
+                asset={asset}
+                canEdit={hasEditPermission(PermissionEntity.ASSETS, asset)}
+              />
             ) : tabIndex === 2 ? (
               <AssetSpecs
                 assetId={Number(assetId)}
