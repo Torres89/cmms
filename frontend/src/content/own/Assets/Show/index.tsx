@@ -10,7 +10,6 @@ import Asset, {
 } from '../../../../models/owns/asset';
 import AssetWorkOrders from './AssetWorkOrders';
 import AssetDetails from './AssetDetails';
-import AssetFiles from './AssetFiles';
 import { isNumeric } from 'src/utils/validators';
 import { IField } from '../../type';
 import {
@@ -114,10 +113,9 @@ const ShowAsset = ({}: PropsType) => {
     { value: 'structure', label: t('structure') },
     { value: 'specs', label: t('specs') },
     { value: 'bom', label: t('parts_bom') },
-    { value: 'documents', label: t('documents') },
+    { value: 'documents', label: t('files_and_documents') },
     { value: 'history', label: t('history') },
     { value: 'work-orders', label: t('work_orders') },
-    { value: 'files', label: t('files') },
     { value: 'meters', label: t('meters') },
     { value: 'downtimes', label: t('downtimes') },
     { value: 'analytics', label: t('analytics') }
@@ -139,13 +137,11 @@ const ShowAsset = ({}: PropsType) => {
       case 'bom':
         return <AssetBom assetId={Number(assetId)} canEdit={canEditAsset} />;
       case 'documents':
-        return <AssetDocuments assetId={Number(assetId)} />;
+        return <AssetDocuments asset={asset} canEdit={canEditAsset} />;
       case 'history':
         return <AssetTimeline assetId={Number(assetId)} />;
       case 'work-orders':
         return <AssetWorkOrders asset={asset} />;
-      case 'files':
-        return <AssetFiles asset={asset} />;
       case 'meters':
         return <AssetMeters asset={asset} />;
       case 'downtimes':
