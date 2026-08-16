@@ -10,7 +10,6 @@ import Asset, {
 } from '../../../../models/owns/asset';
 import AssetWorkOrders from './AssetWorkOrders';
 import AssetDetails from './AssetDetails';
-import AssetParts from './AssetParts';
 import AssetFiles from './AssetFiles';
 import { isNumeric } from 'src/utils/validators';
 import { IField } from '../../type';
@@ -105,6 +104,11 @@ const ShowAsset = ({}: PropsType) => {
   // The dossier tabs come first because they answer the questions people
   // actually arrive with. The original tabs stay where they were so nobody's
   // muscle memory breaks.
+  //
+  // There is no separate "Parts" tab: it listed the asset-part association
+  // table while Parts & BOM listed the bill of materials, and the two never
+  // agreed. The BOM won because it carries quantity, position and replacement
+  // interval, and it now writes the association too.
   const tabs = [
     { value: 'details', label: t('details') },
     { value: 'structure', label: t('structure') },
@@ -113,13 +117,45 @@ const ShowAsset = ({}: PropsType) => {
     { value: 'documents', label: t('documents') },
     { value: 'history', label: t('history') },
     { value: 'work-orders', label: t('work_orders') },
-    { value: 'parts', label: t('parts') },
     { value: 'files', label: t('files') },
     { value: 'meters', label: t('meters') },
     { value: 'downtimes', label: t('downtimes') },
     { value: 'analytics', label: t('analytics') }
   ];
   const tabIndex = tabs.findIndex((tab) => tab.value === arr[arr.length - 1]);
+
+  // Keyed on the tab's value rather than its position. The chain of
+  // `tabIndex === n` this replaced meant that removing or reordering a single
+  // tab silently shifted every tab after it onto the wrong component.
+  const canEditAsset = hasEditPermission(PermissionEntity.ASSETS, asset);
+  const renderTab = (value?: string) => {
+    switch (value) {
+      case 'details':
+        return <AssetDetails asset={asset} loading={loadingGet} />;
+      case 'structure':
+        return <AssetStructure asset={asset} canEdit={canEditAsset} />;
+      case 'specs':
+        return <AssetSpecs assetId={Number(assetId)} canEdit={canEditAsset} />;
+      case 'bom':
+        return <AssetBom assetId={Number(assetId)} canEdit={canEditAsset} />;
+      case 'documents':
+        return <AssetDocuments assetId={Number(assetId)} />;
+      case 'history':
+        return <AssetTimeline assetId={Number(assetId)} />;
+      case 'work-orders':
+        return <AssetWorkOrders asset={asset} />;
+      case 'files':
+        return <AssetFiles asset={asset} />;
+      case 'meters':
+        return <AssetMeters asset={asset} />;
+      case 'downtimes':
+        return <AssetDowntimes asset={asset} />;
+      case 'analytics':
+        return <AssetAnalytics id={Number(assetId)} />;
+      default:
+        return null;
+    }
+  };
   const onDeleteSuccess = () => {
     showSnackBar(t('asset_remove_success'), 'success');
     navigate('/app/assets');
@@ -540,37 +576,7 @@ const ShowAsset = ({}: PropsType) => {
         {isNumeric(assetId) ? (
           <>
             {dossier && <AssetDossierHeader dossier={dossier} />}
-            {tabIndex === 0 ? (
-              <AssetDetails asset={asset} loading={loadingGet} />
-            ) : tabIndex === 1 ? (
-              <AssetStructure
-                asset={asset}
-                canEdit={hasEditPermission(PermissionEntity.ASSETS, asset)}
-              />
-            ) : tabIndex === 2 ? (
-              <AssetSpecs
-                assetId={Number(assetId)}
-                canEdit={hasEditPermission(PermissionEntity.ASSETS, asset)}
-              />
-            ) : tabIndex === 3 ? (
-              <AssetBom assetId={Number(assetId)} />
-            ) : tabIndex === 4 ? (
-              <AssetDocuments assetId={Number(assetId)} />
-            ) : tabIndex === 5 ? (
-              <AssetTimeline assetId={Number(assetId)} />
-            ) : tabIndex === 6 ? (
-              <AssetWorkOrders asset={asset} />
-            ) : tabIndex === 7 ? (
-              <AssetParts asset={asset} />
-            ) : tabIndex === 8 ? (
-              <AssetFiles asset={asset} />
-            ) : tabIndex === 9 ? (
-              <AssetMeters asset={asset} />
-            ) : tabIndex === 10 ? (
-              <AssetDowntimes asset={asset} />
-            ) : (
-              tabIndex === 11 && <AssetAnalytics id={Number(assetId)} />
-            )}
+            {renderTab(tabs[tabIndex]?.value)}
           </>
         ) : null}
         <ConfirmDialog

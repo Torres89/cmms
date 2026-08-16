@@ -99,4 +99,25 @@
         </sql>
     </changeSet>
 
+    <!--
+      And the other direction, which is the half that was actually reported.
+
+      Every BOM line seeded by a vertical pack was written straight into
+      asset_bom_line and never into the association table, so opening a part in
+      Inventory and asking which machines use it returned nothing - even for a
+      part sitting on a machine's bill of materials one click away. Anything
+      already on a BOM is, by definition, used on that asset.
+    -->
+    <changeSet id="1786000007-6" author="machine-specialist-platform">
+        <sql>
+            INSERT INTO t_asset_part_associations (id_part, id_asset)
+            SELECT DISTINCT b.part_id, b.asset_id
+            FROM asset_bom_line b
+            WHERE NOT EXISTS (SELECT 1
+                              FROM t_asset_part_associations assoc
+                              WHERE assoc.id_part = b.part_id
+                                AND assoc.id_asset = b.asset_id)
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

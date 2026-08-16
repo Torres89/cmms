@@ -248,6 +248,9 @@ export interface BomLine {
     manufacturer?: string;
     quantity: number;
     unit?: string;
+    /** An order-on-demand part: zero on hand is normal, not a shortage. */
+    nonStock?: boolean;
+    minQuantity?: number;
     image?: { id: number; url?: string };
   };
 }
