@@ -147,9 +147,9 @@ const ShowAsset = ({}: PropsType) => {
           />
         );
       case 'work-orders':
-        return <AssetWorkOrders asset={asset} />;
+        return <AssetWorkOrders asset={asset} canEdit={canEditAsset} />;
       case 'meters':
-        return <AssetMeters asset={asset} />;
+        return <AssetMeters asset={asset} canEdit={canEditAsset} />;
       case 'downtimes':
         return <AssetDowntimes asset={asset} />;
       case 'analytics':

@@ -1964,7 +1964,9 @@ const locale = {
   could_not_delete_reading: 'Could not delete the reading',
   no_meters_yet: 'This machine has no meters yet. Add one to start recording hours, cycles or condition.',
   update_frequency_days: 'Expected reading frequency (days)',
-  nothing_to_show_yet: 'Nothing recorded yet'
+  nothing_to_show_yet: 'Nothing recorded yet',
+  open_work_orders: 'Open',
+  could_not_load_meters: 'Could not load the meters'
 };
 
 export default locale;

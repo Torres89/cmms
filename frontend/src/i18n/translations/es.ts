@@ -2037,7 +2037,9 @@ const esJSON = {
   could_not_delete_reading: 'No se pudo eliminar la lectura',
   no_meters_yet: 'Esta maquina no tiene medidores. Anade uno para registrar horas, ciclos o condicion.',
   update_frequency_days: 'Frecuencia de lectura esperada (dias)',
-  nothing_to_show_yet: 'Aun no hay nada registrado'
+  nothing_to_show_yet: 'Aun no hay nada registrado',
+  open_work_orders: 'Abiertas',
+  could_not_load_meters: 'No se pudieron cargar los medidores'
 };
 
 export default esJSON;
