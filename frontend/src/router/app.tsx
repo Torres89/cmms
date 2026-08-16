@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { Navigate } from 'react-router-dom';
 
 import SuspenseLoader from 'src/components/SuspenseLoader';
 import analyticsRoutes from './analytics';
@@ -34,6 +35,8 @@ const WorkflowsSettings = Loader(
 const UIConfigurationSettings = Loader(
   lazy(() => import('../content/own/Settings/UiConfiguration'))
 );
+const AiSettings = Loader(lazy(() => import('../content/own/Settings/AiSettings')));
+const Commissioning = Loader(lazy(() => import('../content/own/Commissioning')));
 
 const UserProfile = Loader(lazy(() => import('../content/own/UserProfile')));
 const CompanyProfile = Loader(
@@ -126,7 +129,8 @@ const appRoutes = [
         element: <ChecklistsSettings />
       },
       { path: 'workflows', element: <WorkflowsSettings /> },
-      { path: 'ui-configuration', element: <UIConfigurationSettings /> }
+      { path: 'ui-configuration', element: <UIConfigurationSettings /> },
+      { path: 'ai', element: <AiSettings /> }
     ]
   },
   {
@@ -245,6 +249,10 @@ const appRoutes = [
     ]
   },
   {
+    path: 'commissioning',
+    element: <Commissioning />
+  },
+  {
     path: 'assets',
     children: [
       { path: '', element: <Assets /> },
@@ -253,11 +261,19 @@ const appRoutes = [
         children: [
           { path: 'work-orders', element: <ShowAsset /> },
           { path: 'details', element: <ShowAsset /> },
-          { path: 'parts', element: <ShowAsset /> },
-          { path: 'files', element: <ShowAsset /> },
+          // The Parts tab was folded into Parts & BOM and the Files tab into
+          // Files & Documents. The old paths redirect rather than 404 because
+          // they are what any existing bookmark or emailed link points at.
+          { path: 'parts', element: <Navigate to="../bom" replace /> },
+          { path: 'files', element: <Navigate to="../documents" replace /> },
           { path: 'meters', element: <ShowAsset /> },
           { path: 'downtimes', element: <ShowAsset /> },
-          { path: 'analytics', element: <ShowAsset /> }
+          { path: 'analytics', element: <ShowAsset /> },
+          { path: 'structure', element: <ShowAsset /> },
+          { path: 'specs', element: <ShowAsset /> },
+          { path: 'bom', element: <ShowAsset /> },
+          { path: 'documents', element: <ShowAsset /> },
+          { path: 'history', element: <ShowAsset /> }
         ]
       }
     ]

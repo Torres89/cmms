@@ -122,7 +122,10 @@ function MultipleTabsLayout(props: SettingsLayoutProps) {
   } = props;
   const { t }: { t: any } = useTranslation();
   const navigate = useNavigate();
-  const currentTab = tabs[tabIndex].value;
+  // A URL naming a tab that no longer exists gives tabIndex === -1. Reading
+  // straight through that threw and blanked the whole page, which is a harsh
+  // punishment for a stale bookmark; fall back to the first tab instead.
+  const currentTab = (tabs[tabIndex] ?? tabs[0])?.value;
 
   const handleTabsChange = (_event: ChangeEvent<{}>, value: string): void => {
     navigate(`${basePath}/${value}`);
