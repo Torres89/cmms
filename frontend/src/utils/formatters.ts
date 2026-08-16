@@ -28,7 +28,19 @@ export const formatAssetValues = (values) => {
   newValues.assignedTo = formatSelectMultiple(newValues.assignedTo);
   newValues.teams = formatSelectMultiple(newValues.teams);
   newValues.parts = formatSelectMultiple(newValues.parts);
+  // The machine-specialist selects hold plain enum strings, not entity
+  // references, so they unwrap to the bare value rather than to { id }.
+  newValues.level = formatEnumSelect(newValues.level);
+  newValues.trackingClass = formatEnumSelect(newValues.trackingClass);
   return newValues;
+};
+
+/** A select whose value is an enum name rather than an entity id. */
+export const formatEnumSelect = (
+  value: { label: string; value: string } | string | undefined | null
+): string | null => {
+  if (value == null) return null;
+  return typeof value === 'string' ? value : value.value ?? null;
 };
 
 export const formatSwitch = (values: {}, key: string) => {

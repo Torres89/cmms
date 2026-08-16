@@ -34,8 +34,10 @@ import { PermissionEntity } from '../../../../models/owns/role';
 import {
   createAssetDowntime,
   deleteAssetDowntime,
+  editAssetDowntime,
   getAssetDowntimes
 } from '../../../../slices/assetDowntime';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { useContext, useEffect, useState } from 'react';
 import AddTwoToneIcon from '@mui/icons-material/AddTwoTone';
 import Form from '../../components/form';
@@ -63,16 +65,17 @@ const AssetDowntimes = ({ asset }: PropsType) => {
   const [openAddModal, setOpenAddModal] = useState<boolean>(false);
   const [openEditModal, setOpenEditModal] = useState<boolean>(false);
   const [currentDowntime, setCurrentDowntime] = useState<AssetDowntime>();
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const { showSnackBar } = useContext(CustomSnackBarContext);
   const { getFormattedDate } = useContext(CompanySettingsContext);
 
   useEffect(() => {
     if (asset) dispatch(getAssetDowntimes(asset.id));
   }, [asset]);
-  const handleDelete = (id: number) => {
-    if (window.confirm(t('confirm_delete_asset_downtime'))) {
-      dispatch(deleteAssetDowntime(asset.id, id));
-    }
+  const handleDelete = (id: number) => setPendingDelete(id);
+  const confirmDelete = () => {
+    if (pendingDelete != null) dispatch(deleteAssetDowntime(asset.id, pendingDelete));
+    setPendingDelete(null);
   };
   const onCreationSuccess = () => {
     setOpenAddModal(false);
@@ -254,8 +257,12 @@ const AssetDowntimes = ({ asset }: PropsType) => {
             onChange={({ field, e }) => {}}
             onSubmit={async (values) => {
               if (verifyValues(values))
+                // This used to dispatch createAssetDowntime, so every edit left
+                // the original row in place and added a second one — which is
+                // why downtime totals drifted upward.
                 return dispatch(
-                  createAssetDowntime(asset.id, {
+                  editAssetDowntime(currentDowntime.id, asset.id, {
+                    ...currentDowntime,
                     ...values,
                     duration: values.hours * 60 * 60 + values.minutes * 60
                   })
@@ -324,6 +331,13 @@ const AssetDowntimes = ({ asset }: PropsType) => {
       </Grid>
       {renderAddModal()}
       {renderEditModal()}
+      <ConfirmDialog
+        open={pendingDelete != null}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        confirmText={t('to_delete')}
+        question={t('confirm_delete_asset_downtime')}
+      />
     </Box>
   );
 };

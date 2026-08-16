@@ -58,7 +58,39 @@ export interface AssetDTO extends Audit {
   power: string;
   manufacturer: string;
   customId: string;
+
+  // The machine-specialist columns. Unlike everything above them, these are
+  // ignored server-side when absent from a PATCH rather than nulled — see
+  // AssetMapper.updateAsset.
+  level?: AssetLevel;
+  positionCode?: string;
+  functionalDescription?: string;
+  criticality?: number;
+  downtimeCostPerHour?: number;
+  replacementCost?: number;
+  trackingClass?: TrackingClass;
+  equipmentClass?: string;
 }
+
+/** ISO 14224 levels, as far down as an Asset row is used to model one. */
+export const assetLevels = [
+  'SITE',
+  'SYSTEM',
+  'EQUIPMENT',
+  'SUBUNIT',
+  'COMPONENT',
+  'PART'
+] as const;
+export type AssetLevel = typeof assetLevels[number];
+
+/** Whether a position's occupant has an identity, and whether it has a life. */
+export const trackingClasses = [
+  'NON_TRACKED',
+  'SERIALIZED',
+  'LIFE_LIMITED'
+] as const;
+export type TrackingClass = typeof trackingClasses[number];
+
 export interface AssetRow extends AssetDTO {
   hierarchy: number[];
   childrenFetched?: boolean;

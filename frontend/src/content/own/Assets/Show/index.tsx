@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import MultipleTabsLayout from '../../components/MultipleTabsLayout';
 import { TitleContext } from '../../../../contexts/TitleContext';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Asset, { AssetDTO } from '../../../../models/owns/asset';
+import Asset, {
+  AssetDTO,
+  assetLevels,
+  trackingClasses
+} from '../../../../models/owns/asset';
 import AssetWorkOrders from './AssetWorkOrders';
 import AssetDetails from './AssetDetails';
 import AssetParts from './AssetParts';
@@ -37,6 +41,14 @@ import AssetMeters from './AssetMeters';
 import { getImageAndFiles } from '../../../../utils/overall';
 import AssetDowntimes from './AssetDowntimes';
 import AssetAnalytics from './AssetAnalytics';
+import AssetDossierHeader from './AssetDossierHeader';
+import AssetStructure from './AssetStructure';
+import AssetSpecs from './AssetSpecs';
+import AssetBom from './AssetBom';
+import AssetDocuments from './AssetDocuments';
+import AssetTimeline from './AssetTimeline';
+import apiUtil from '../../../../utils/api';
+import { AssetDossier } from '../../../../models/owns/dossier';
 
 interface PropsType {}
 
@@ -60,8 +72,20 @@ const ShowAsset = ({}: PropsType) => {
   } = useAuth();
   const dispatch = useDispatch();
 
+  const [dossier, setDossier] = useState<AssetDossier | null>(null);
+
   useEffect(() => {
     if (isNumeric(assetId)) dispatch(getAssetDetails(Number(assetId)));
+  }, [assetId]);
+
+  useEffect(() => {
+    if (!isNumeric(assetId)) return;
+    // The dossier header sits above every tab, so it is fetched once here
+    // rather than by each tab separately.
+    apiUtil
+      .get<AssetDossier>(`assets/${assetId}/dossier`)
+      .then(setDossier)
+      .catch(() => setDossier(null));
   }, [assetId]);
 
   const handleOpenUpdateModal = () => setOpenUpdateModal(true);
@@ -78,8 +102,16 @@ const ShowAsset = ({}: PropsType) => {
 
   const arr = location.pathname.split('/');
 
+  // The dossier tabs come first because they answer the questions people
+  // actually arrive with. The original tabs stay where they were so nobody's
+  // muscle memory breaks.
   const tabs = [
     { value: 'details', label: t('details') },
+    { value: 'structure', label: t('structure') },
+    { value: 'specs', label: t('specs') },
+    { value: 'bom', label: t('parts_bom') },
+    { value: 'documents', label: t('documents') },
+    { value: 'history', label: t('history') },
     { value: 'work-orders', label: t('work_orders') },
     { value: 'parts', label: t('parts') },
     { value: 'files', label: t('files') },
@@ -188,7 +220,9 @@ const ShowAsset = ({}: PropsType) => {
       label: t('image')
     },
     {
-      name: 'assignedTo',
+      // Not 'assignedTo': that is the name of the select below, and two fields
+      // sharing a name make React drop one of them from the grid.
+      name: 'assignedToGroup',
       type: 'titleGroupField',
       label: t('assigned_to')
     },
@@ -214,6 +248,72 @@ const ShowAsset = ({}: PropsType) => {
       multiple: true,
       label: t('teams'),
       placeholder: t('teams_description')
+    },
+    // The machine profile. These columns drive the dossier header, the
+    // structure tree, the spec-key catalog and the failure-mode catalog, and
+    // until now there was nowhere in the app to set any of them.
+    {
+      name: 'machineProfile',
+      type: 'titleGroupField',
+      label: t('machine_profile')
+    },
+    {
+      name: 'equipmentClass',
+      type: 'text',
+      midWidth: true,
+      label: t('equipment_class'),
+      placeholder: 'CNC_MACHINING_CENTER_VMC',
+      helperText: t('equipment_class_description')
+    },
+    {
+      name: 'level',
+      type: 'select',
+      midWidth: true,
+      label: t('asset_level'),
+      items: assetLevels.map((level) => ({ label: t(level), value: level }))
+    },
+    {
+      name: 'positionCode',
+      type: 'text',
+      midWidth: true,
+      label: t('position_code'),
+      placeholder: 'SPN'
+    },
+    {
+      name: 'trackingClass',
+      type: 'select',
+      midWidth: true,
+      label: t('tracking_class'),
+      items: trackingClasses.map((tracking) => ({
+        label: t(tracking),
+        value: tracking
+      }))
+    },
+    {
+      name: 'criticality',
+      type: 'number',
+      midWidth: true,
+      label: t('criticality'),
+      placeholder: '1 - 5'
+    },
+    {
+      name: 'downtimeCostPerHour',
+      type: 'number',
+      midWidth: true,
+      label: t('downtime_cost_per_hour')
+    },
+    {
+      name: 'replacementCost',
+      type: 'number',
+      midWidth: true,
+      label: t('replacement_cost')
+    },
+    {
+      name: 'functionalDescription',
+      type: 'text',
+      multiple: true,
+      label: t('functional_description'),
+      placeholder: t('functional_description_description')
     },
     {
       name: 'moreInfos',
@@ -373,6 +473,12 @@ const ShowAsset = ({}: PropsType) => {
                     label: asset.parentAsset.name,
                     value: asset.parentAsset.id
                   }
+                : null,
+              level: asset?.level
+                ? { label: t(asset.level), value: asset.level }
+                : null,
+              trackingClass: asset?.trackingClass
+                ? { label: t(asset.trackingClass), value: asset.trackingClass }
                 : null
             }}
             onChange={({ field, e }) => {}}
@@ -432,21 +538,37 @@ const ShowAsset = ({}: PropsType) => {
         editAction
       >
         {isNumeric(assetId) ? (
-          tabIndex === 0 ? (
-            <AssetDetails asset={asset} loading={loadingGet} />
-          ) : tabIndex === 1 ? (
-            <AssetWorkOrders asset={asset} />
-          ) : tabIndex === 2 ? (
-            <AssetParts asset={asset} />
-          ) : tabIndex === 3 ? (
-            <AssetFiles asset={asset} />
-          ) : tabIndex === 4 ? (
-            <AssetMeters asset={asset} />
-          ) : tabIndex === 5 ? (
-            <AssetDowntimes asset={asset} />
-          ) : (
-            tabIndex === 6 && <AssetAnalytics id={Number(assetId)} />
-          )
+          <>
+            {dossier && <AssetDossierHeader dossier={dossier} />}
+            {tabIndex === 0 ? (
+              <AssetDetails asset={asset} loading={loadingGet} />
+            ) : tabIndex === 1 ? (
+              <AssetStructure assetId={Number(assetId)} />
+            ) : tabIndex === 2 ? (
+              <AssetSpecs
+                assetId={Number(assetId)}
+                canEdit={hasEditPermission(PermissionEntity.ASSETS, asset)}
+              />
+            ) : tabIndex === 3 ? (
+              <AssetBom assetId={Number(assetId)} />
+            ) : tabIndex === 4 ? (
+              <AssetDocuments assetId={Number(assetId)} />
+            ) : tabIndex === 5 ? (
+              <AssetTimeline assetId={Number(assetId)} />
+            ) : tabIndex === 6 ? (
+              <AssetWorkOrders asset={asset} />
+            ) : tabIndex === 7 ? (
+              <AssetParts asset={asset} />
+            ) : tabIndex === 8 ? (
+              <AssetFiles asset={asset} />
+            ) : tabIndex === 9 ? (
+              <AssetMeters asset={asset} />
+            ) : tabIndex === 10 ? (
+              <AssetDowntimes asset={asset} />
+            ) : (
+              tabIndex === 11 && <AssetAnalytics id={Number(assetId)} />
+            )}
+          </>
         ) : null}
         <ConfirmDialog
           open={openDelete}
