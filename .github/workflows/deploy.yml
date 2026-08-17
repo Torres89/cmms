@@ -52,6 +52,25 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.prefix }}-agent:latest
 
+      # docker-compose.yml starts ingest-worker unconditionally, so the EC2 box
+      # must be able to pull it. Without this step `docker compose pull` fails on
+      # a :local tag that exists in no registry.
+      - name: Build and push Ingest worker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ingest-worker
+          push: true
+          tags: ${{ steps.image.outputs.prefix }}-ingest:latest
+
+      # Profile-gated, so it is not started by default — but it is built here so
+      # that enabling the profile later does not require a build on the box.
+      - name: Build and push Telemetry collector
+        uses: docker/build-push-action@v5
+        with:
+          context: ./telemetry-collector
+          push: true
+          tags: ${{ steps.image.outputs.prefix }}-telemetry:latest
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest

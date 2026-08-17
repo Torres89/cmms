@@ -36,9 +36,30 @@ services:
   agent:
     image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-agent:latest
     restart: unless-stopped
+    # Reached only through Caddy. Remove the "8001:8001" mapping from
+    # docker-compose.yml (or bind it to 127.0.0.1) so the agent is not exposed
+    # directly on the box.
     environment:
       - CMMS_API_URL=http://api:8080
       - CMMS_FRONT_URL=${PUBLIC_FRONT_URL}
+      - DB_URL=postgres:5432/atlas
+      - DB_USER=${POSTGRES_USER}
+      - DB_PWD=${POSTGRES_PWD}
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN:-}
+      - MCP_ENABLED=${MCP_ENABLED:-true}
+      - MCP_PUBLIC_URL=${MCP_PUBLIC_URL}
+
+  # Pulled, never built on the box: the parsing stack (Docling + CPU torch) is
+  # several GB and building it on the EC2 instance would exhaust its memory.
+  ingest-worker:
+    image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-ingest:latest
+    restart: unless-stopped
+
+  # Only starts with `--profile telemetry`; the image is pinned here so that
+  # enabling the profile never triggers a build on the box either.
+  telemetry-collector:
+    image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-telemetry:latest
+    restart: unless-stopped
 
   postgres:
     restart: unless-stopped
