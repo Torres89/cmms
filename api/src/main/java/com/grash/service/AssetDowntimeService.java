@@ -85,11 +85,22 @@ public class AssetDowntimeService {
         return result;
     }
 
+    /**
+     * A downtime may not overlap another one on the same asset.
+     * <p>
+     * Note the exclusion of the record being saved. On an update it is already
+     * in the list, and it overlaps itself by definition — so without this, no
+     * downtime could ever be edited: every attempt failed as "can't
+     * interweave", whatever the new values were.
+     */
     private void checkOverlapping(AssetDowntime assetDowntime) {
         Collection<AssetDowntime> assetDowntimes = findByAsset(assetDowntime.getAsset().getId());
         Date startedOn = assetDowntime.getStartsOn();
         Date endedOn = assetDowntime.getEndsOn();
         assetDowntimes.forEach(assetDowntime1 -> {
+            if (assetDowntime.getId() != null && assetDowntime.getId().equals(assetDowntime1.getId())) {
+                return;
+            }
             Date startedOn1 = assetDowntime1.getStartsOn();
             Date endedOn1 = assetDowntime1.getEndsOn();
             //(StartA <= EndB) and (EndA >= StartB)
