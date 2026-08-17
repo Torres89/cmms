@@ -5,6 +5,7 @@ import com.grash.dto.SuccessResponse;
 import com.grash.exception.CustomException;
 import com.grash.model.CustomField;
 import com.grash.model.OwnUser;
+import com.grash.model.enums.CustomFieldEntity;
 import com.grash.service.CustomFieldService;
 import com.grash.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @RestController
@@ -28,6 +30,19 @@ public class CustomFieldController {
 
     private final CustomFieldService customFieldService;
     private final UserService userService;
+
+    /**
+     * Every custom field attached to one entity — assets, parts, work orders,
+     * locations, vendors or component instances.
+     */
+    @GetMapping("/{entityType}/{entityId}")
+    @PreAuthorize("hasRole('ROLE_CLIENT')")
+    public Collection<CustomField> getForEntity(@PathVariable("entityType") CustomFieldEntity entityType,
+                                                @PathVariable("entityId") Long entityId,
+                                                HttpServletRequest req) {
+        OwnUser user = userService.whoami(req);
+        return customFieldService.findForEntity(entityType, entityId, user.getCompany().getId());
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("permitAll()")

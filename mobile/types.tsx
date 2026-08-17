@@ -56,6 +56,7 @@ export type RootStackParamList = {
   AddUser: undefined;
   WODetails: { id: number; workOrderProp?: WorkOrder };
   AssetDetails: { id: number; assetProp?: AssetDTO };
+  AssetChat: { assetId: number; assetName?: string };
   LocationDetails: { id: number; locationProp?: Location };
   RequestDetails: { id: number; requestProp?: Request };
   UserDetails: { id: number; userProp?: OwnUser };

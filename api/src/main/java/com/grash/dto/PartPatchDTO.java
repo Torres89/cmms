@@ -55,5 +55,27 @@ public class PartPatchDTO {
     private Collection<Team> teams;
 
     private String unit;
-    
+
+    // Part identity and sourcing. Without these on the DTO the sourcing view,
+    // the restock kit and every API consumer cannot see what a part actually is
+    // -- a name and a cost is not an identity.
+
+    private String manufacturer;
+
+    /** The manufacturer part number: the part's real identity. */
+    private String mpn;
+
+    private String preferredSupplierSku;
+
+    private Double leadTimeDaysTypical;
+
+    private Integer criticality;
+
+    private Integer shelfLifeDays;
+
+    private String storageConditions;
+
+    private boolean stockRecommended;
+
+    private Double reorderPoint;
 }

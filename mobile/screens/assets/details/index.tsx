@@ -18,6 +18,7 @@ import { SheetManager } from 'react-native-actions-sheet';
 import { deleteAsset, getAssetDetails } from '../../../slices/asset';
 import LoadingDialog from '../../../components/LoadingDialog';
 import AssetDetails from './AssetDetails';
+import AssetDossier from './AssetDossier';
 import { TabBar, TabView } from 'react-native-tab-view';
 import AssetWorkOrders from './AssetWorkOrders';
 import AssetFiles from './AssetFiles';
@@ -39,7 +40,10 @@ export default function AssetDetailsHome({
   const [tabIndex, setTabIndex] = useState(0);
   const [openDelete, setOpenDelete] = useState<boolean>(false);
   const { showSnackBar } = useContext(CustomSnackBarContext);
+  // The dossier comes first: a technician who just scanned the machine wants
+  // its current state and the four things they can do, not a field list.
   const [tabs] = useState([
+    { key: 'dossier', title: t('overview') },
     { key: 'details', title: t('details') },
     { key: 'work-orders', title: t('work_orders') },
     { key: 'files', title: t('files') },
@@ -47,6 +51,8 @@ export default function AssetDetailsHome({
   ]);
   const renderScene = ({ route, jumpTo }) => {
     switch (route.key) {
+      case 'dossier':
+        return <AssetDossier asset={asset} navigation={navigation} />;
       case 'details':
         return <AssetDetails asset={asset} navigation={navigation} />;
       case 'work-orders':

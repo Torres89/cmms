@@ -97,3 +97,13 @@ export const paddleEnvironment = getRuntimeValue('PADDLE_ENVIRONMENT') as
   | 'production';
 
 export const agentUrl = getRuntimeValue('AGENT_URL', 'http://localhost:8001');
+
+/**
+ * AGPLv3 section 13: users interacting with a modified version over a network
+ * must be offered the complete corresponding source. This URL is surfaced in
+ * the app footer and the sidebar so that offer is always one click away.
+ */
+export const sourceCodeUrl: string = getRuntimeValue(
+  'SOURCE_CODE_URL',
+  'https://github.com/Torres89/cmms'
+);

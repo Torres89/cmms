@@ -81,6 +81,9 @@ security:
   invitation-via-email: ${INVITATION_VIA_EMAIL}
   cors:
     enabled: ${ENABLE_CORS:true}
+  # AES-GCM key for secrets we hold on a customer's behalf (their AI provider
+  # key). Falls back to the JWT secret so nothing is ever stored in plaintext.
+  secret-encryption-key: ${SECRET_ENCRYPTION_KEY:}
 frontend:
   url: ${PUBLIC_FRONT_URL}
 mail:
@@ -98,6 +101,19 @@ api:
   host: ${PUBLIC_API_URL}
 storage:
   type: ${STORAGE_TYPE}
+  # Ceiling on files served through the API's heap. Anything larger must go out
+  # as a signed URL fetched directly from the object store.
+  inline-max-bytes: ${STORAGE_INLINE_MAX_BYTES:33554432}
+  s3:
+    endpoint: ${STORAGE_S3_ENDPOINT:}
+    region: ${STORAGE_S3_REGION:}
+    bucket: ${STORAGE_S3_BUCKET:}
+    access-key: ${STORAGE_S3_ACCESS_KEY:}
+    secret-key: ${STORAGE_S3_SECRET_KEY:}
+    path-style: ${STORAGE_S3_PATH_STYLE:true}
+  local:
+    base-path: ${STORAGE_LOCAL_PATH:}
+    signing-key: ${STORAGE_LOCAL_SIGNING_KEY:${JWT_SECRET_KEY:}}
   minio:
     endpoint: ${MINIO_ENDPOINT:}
     bucket: ${MINIO_BUCKET:}
@@ -137,6 +153,18 @@ sendgrid:
   contact-list-id: ${SENDGRID_CONTACT_LIST_ID:}
   from:
     email: ${SENDGRID_FROM_EMAIL:}
+
+knowledge:
+  embedding:
+    # The ingest worker, which already has EmbeddingGemma loaded. Empty means
+    # retrieval runs lexical-only rather than failing.
+    url: ${EMBEDDING_URL:}
+    timeout-seconds: ${EMBEDDING_TIMEOUT_SECONDS:15}
+
+internal:
+  # Shared secret for service-to-service calls from the agent. Leave empty to
+  # disable the internal endpoints entirely.
+  service-token: ${INTERNAL_SERVICE_TOKEN:}
 
 registration:
   disable: ${DISABLE_PUBLIC_REGISTRATION:true}

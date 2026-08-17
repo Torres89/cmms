@@ -24,3 +24,23 @@ export const getApiUrl = async (): Promise<string> => {
     return rawApiUrl.endsWith('/') ? rawApiUrl : rawApiUrl + '/';
   }
 };
+
+/**
+ * The agent, for the on-machine assistant.
+ *
+ * Door 2: the technician's phone is the highest-value moment in this product
+ * and MCP clients are desktop applications, so mobile talks to the agent
+ * directly with the user's own token.
+ */
+const defaultAgentUrl = Constants.expoConfig.extra.AGENT_URL;
+
+export const getAgentUrl = async (): Promise<string> => {
+  try {
+    const customUrl = await AsyncStorage.getItem('customAgentUrl');
+    const raw = customUrl || defaultAgentUrl || '';
+    if (!raw) return '';
+    return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  } catch (error) {
+    return defaultAgentUrl || '';
+  }
+};

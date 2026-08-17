@@ -1,0 +1,359 @@
+{
+  "key": "CRAWLER_DOZER",
+  "version": "1.0.0",
+  "label": {
+    "en": "Crawler dozer",
+    "es": "Tractor de orugas"
+  },
+  "description": "Earthmoving crawler dozer. Undercarriage is typically the largest single lifetime cost, and scheduled oil sampling is the highest-value predictive practice available — it needs no sensors at all, just discipline about taking the sample.",
+
+  "ebs": [
+    {
+      "positionCode": "ENG", "level": "SUBUNIT", "name": "Engine", "nameEs": "Motor",
+      "critical": true, "criticality": 5,
+      "children": [
+        { "positionCode": "ENG-TURBO", "level": "COMPONENT", "name": "Turbocharger",
+          "nameEs": "Turbocompresor", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "ENG-INJ", "level": "COMPONENT", "name": "Injectors",
+          "nameEs": "Inyectores", "criticality": 4 },
+        { "positionCode": "ENG-FUEL", "level": "COMPONENT", "name": "Fuel system & filters",
+          "nameEs": "Sistema de combustible y filtros", "criticality": 4 }
+      ]
+    },
+    {
+      "positionCode": "COOL", "level": "SUBUNIT", "name": "Cooling pack",
+      "nameEs": "Paquete de refrigeración", "criticality": 4,
+      "functionalDescription": "Plugging is common in dusty work; it drives overheating that shows up as engine and hydraulic problems."
+    },
+    {
+      "positionCode": "AFT", "level": "SUBUNIT", "name": "Aftertreatment (DPF/SCR)",
+      "nameEs": "Postratamiento (DPF/SCR)", "criticality": 3,
+      "children": [
+        { "positionCode": "AFT-DPF", "level": "COMPONENT", "name": "Diesel particulate filter",
+          "nameEs": "Filtro de partículas", "trackingClass": "SERIALIZED", "criticality": 3 }
+      ]
+    },
+    {
+      "positionCode": "HYD", "level": "SUBUNIT", "name": "Hydraulics",
+      "nameEs": "Sistema hidráulico", "critical": true, "criticality": 5,
+      "children": [
+        { "positionCode": "HYD-PUMP", "level": "COMPONENT", "name": "Main hydraulic pump",
+          "nameEs": "Bomba hidráulica principal", "trackingClass": "SERIALIZED", "criticality": 5 },
+        { "positionCode": "HYD-IMPL", "level": "COMPONENT", "name": "Implement circuit & cylinders",
+          "nameEs": "Circuito de implemento y cilindros", "criticality": 4 },
+        { "positionCode": "HYD-STEER", "level": "COMPONENT", "name": "Steering circuit",
+          "nameEs": "Circuito de dirección", "criticality": 4 }
+      ]
+    },
+    {
+      "positionCode": "PWR", "level": "SUBUNIT", "name": "Powertrain",
+      "nameEs": "Tren de potencia", "critical": true, "criticality": 5,
+      "children": [
+        { "positionCode": "PWR-TC", "level": "COMPONENT", "name": "Torque converter",
+          "nameEs": "Convertidor de par", "trackingClass": "SERIALIZED", "criticality": 5 },
+        { "positionCode": "PWR-TRANS", "level": "COMPONENT", "name": "Transmission",
+          "nameEs": "Transmisión", "trackingClass": "SERIALIZED", "criticality": 5 },
+        { "positionCode": "FD-L", "level": "COMPONENT", "name": "Left final drive",
+          "nameEs": "Mando final izquierdo", "trackingClass": "LIFE_LIMITED",
+          "hourLimit": 10000, "criticality": 5 },
+        { "positionCode": "FD-R", "level": "COMPONENT", "name": "Right final drive",
+          "nameEs": "Mando final derecho", "trackingClass": "LIFE_LIMITED",
+          "hourLimit": 10000, "criticality": 5 }
+      ]
+    },
+    {
+      "positionCode": "UC", "level": "SUBUNIT", "name": "Undercarriage",
+      "nameEs": "Tren de rodaje", "critical": true, "criticality": 5,
+      "functionalDescription": "Usually the largest single lifetime cost. Wear is measurable and forecastable, so it should never be a surprise.",
+      "children": [
+        { "positionCode": "UC-CHAIN-L", "level": "COMPONENT", "name": "Left track chain",
+          "nameEs": "Cadena izquierda", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "UC-CHAIN-R", "level": "COMPONENT", "name": "Right track chain",
+          "nameEs": "Cadena derecha", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "UC-ROLLERS", "level": "COMPONENT", "name": "Track rollers",
+          "nameEs": "Rodillos", "criticality": 3 },
+        { "positionCode": "UC-IDLERS", "level": "COMPONENT", "name": "Idlers",
+          "nameEs": "Ruedas guía", "criticality": 3 },
+        { "positionCode": "UC-SPROCKET", "level": "COMPONENT", "name": "Sprockets",
+          "nameEs": "Ruedas dentadas", "criticality": 3 },
+        { "positionCode": "UC-SHOES", "level": "COMPONENT", "name": "Track shoes",
+          "nameEs": "Zapatas", "criticality": 2 }
+      ]
+    },
+    { "positionCode": "BLADE", "level": "SUBUNIT", "name": "Blade & C-frame",
+      "nameEs": "Hoja y bastidor en C", "criticality": 3 },
+    { "positionCode": "ELEC", "level": "SUBUNIT", "name": "Electrical",
+      "nameEs": "Sistema eléctrico", "criticality": 3 },
+    { "positionCode": "CAB", "level": "SUBUNIT", "name": "Operator station",
+      "nameEs": "Puesto del operador", "criticality": 2 }
+  ],
+
+  "specKeys": [
+    { "group": "Engine", "key": "engine_model", "labelEn": "Engine model",
+      "labelEs": "Modelo de motor", "type": "TEXT", "required": true, "order": 10 },
+    { "group": "Engine", "key": "engine_power", "labelEn": "Net power", "labelEs": "Potencia neta",
+      "unit": "kW", "type": "NUM", "required": true, "order": 11 },
+    { "group": "Engine", "key": "emissions_tier", "labelEn": "Emissions tier",
+      "labelEs": "Nivel de emisiones", "type": "TEXT", "order": 12 },
+    { "group": "Engine", "key": "engine_oil_capacity", "labelEn": "Engine oil capacity",
+      "labelEs": "Capacidad de aceite de motor", "unit": "L", "type": "NUM", "required": true, "order": 13 },
+    { "group": "Engine", "key": "engine_oil_spec", "labelEn": "Engine oil specification",
+      "labelEs": "Especificación de aceite de motor", "type": "TEXT", "required": true, "order": 14 },
+
+    { "group": "Machine", "key": "operating_weight", "labelEn": "Operating weight",
+      "labelEs": "Peso operativo", "unit": "kg", "type": "NUM", "required": true, "order": 20 },
+    { "group": "Machine", "key": "blade_capacity", "labelEn": "Blade capacity",
+      "labelEs": "Capacidad de hoja", "unit": "m3", "type": "NUM", "order": 21 },
+    { "group": "Machine", "key": "ground_pressure", "labelEn": "Ground pressure",
+      "labelEs": "Presión sobre el suelo", "unit": "kPa", "type": "NUM", "order": 22 },
+
+    { "group": "Hydraulics", "key": "hydraulic_capacity", "labelEn": "Hydraulic system capacity",
+      "labelEs": "Capacidad del sistema hidráulico", "unit": "L", "type": "NUM", "required": true, "order": 30 },
+    { "group": "Hydraulics", "key": "hydraulic_oil_spec", "labelEn": "Hydraulic oil specification",
+      "labelEs": "Especificación de aceite hidráulico", "type": "TEXT", "required": true, "order": 31 },
+    { "group": "Hydraulics", "key": "system_pressure", "labelEn": "System pressure",
+      "labelEs": "Presión del sistema", "unit": "bar", "type": "NUM", "order": 32 },
+
+    { "group": "Powertrain", "key": "transmission_capacity", "labelEn": "Transmission oil capacity",
+      "labelEs": "Capacidad de aceite de transmisión", "unit": "L", "type": "NUM", "required": true, "order": 40 },
+    { "group": "Powertrain", "key": "final_drive_capacity", "labelEn": "Final drive oil capacity (each)",
+      "labelEs": "Capacidad de aceite de mando final (cada uno)", "unit": "L", "type": "NUM",
+      "required": true, "order": 41 },
+    { "group": "Powertrain", "key": "final_drive_oil_spec", "labelEn": "Final drive oil specification",
+      "labelEs": "Especificación de aceite de mando final", "type": "TEXT", "required": true, "order": 42 },
+
+    { "group": "Undercarriage", "key": "track_shoe_width", "labelEn": "Track shoe width",
+      "labelEs": "Ancho de zapata", "unit": "mm", "type": "NUM", "required": true, "order": 50 },
+    { "group": "Undercarriage", "key": "track_link_count", "labelEn": "Track links per side",
+      "labelEs": "Eslabones por lado", "type": "NUM", "order": 51 },
+    { "group": "Undercarriage", "key": "track_tension_spec", "labelEn": "Track sag specification",
+      "labelEs": "Especificación de flecha de cadena", "unit": "mm", "type": "NUM", "required": true, "order": 52 },
+
+    { "group": "Fluids", "key": "fuel_capacity", "labelEn": "Fuel tank capacity",
+      "labelEs": "Capacidad del tanque de combustible", "unit": "L", "type": "NUM", "order": 60 },
+    { "group": "Fluids", "key": "def_capacity", "labelEn": "DEF tank capacity",
+      "labelEs": "Capacidad del tanque de DEF", "unit": "L", "type": "NUM", "order": 61 },
+    { "group": "Fluids", "key": "coolant_capacity", "labelEn": "Coolant capacity",
+      "labelEs": "Capacidad de refrigerante", "unit": "L", "type": "NUM", "order": 62 }
+  ],
+
+  "meters": [
+    { "name": "SMR hours",
+      "usageBasis": true, "nameEs": "Horas SMR", "unit": "h",
+      "updateFrequency": 7, "sourceType": "ISO15143", "dataItem": "CumulativeOperatingHours" },
+    { "name": "Fuel used", "nameEs": "Combustible usado", "unit": "L",
+      "updateFrequency": 7, "sourceType": "ISO15143", "dataItem": "FuelUsed" },
+    { "name": "Idle hours", "nameEs": "Horas en ralentí", "unit": "h",
+      "updateFrequency": 7, "sourceType": "ISO15143", "dataItem": "CumulativeIdleHours" }
+  ],
+
+  "pmTemplates": [
+    {
+      "title": "Daily walkaround",
+      "titleEs": "Inspección diaria",
+      "priority": "MEDIUM",
+      "intervals": [{ "basis": "CALENDAR", "value": 1, "unit": "days" }],
+      "tasks": [
+        "Engine oil and coolant levels",
+        "Hydraulic oil level",
+        "Drain the fuel water separator",
+        "Cooling pack clear of debris — plugging here shows up later as engine and hydraulic faults",
+        "Track tension and visible undercarriage damage",
+        "Walk the machine for leaks",
+        "Check DEF level"
+      ],
+      "tasksEs": [
+        "Niveles de aceite de motor y refrigerante",
+        "Nivel de aceite hidráulico",
+        "Drenar el separador de agua del combustible",
+        "Paquete de refrigeración libre de residuos",
+        "Tensión de cadenas y daños visibles en el tren de rodaje",
+        "Recorrer la máquina buscando fugas",
+        "Comprobar nivel de DEF"
+      ]
+    },
+    {
+      "title": "250-hour service",
+      "titleEs": "Servicio de 250 horas",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "intervals": [
+        { "basis": "METER", "meter": "SMR hours", "value": 250, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 3, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Engine oil and filter change",
+        "TAKE SOS SAMPLES: engine, hydraulic, transmission, both final drives — trending wear metals is the highest-value predictive practice on this machine and it needs no sensors",
+        "Fuel filters",
+        "Grease all points per the lubrication chart",
+        "Measure and record track sag",
+        "Check battery and connections"
+      ],
+      "tasksEs": [
+        "Cambio de aceite y filtro de motor",
+        "TOMAR MUESTRAS SOS: motor, hidráulico, transmisión y ambos mandos finales",
+        "Filtros de combustible",
+        "Engrasar todos los puntos según la tabla",
+        "Medir y registrar la flecha de las cadenas",
+        "Comprobar batería y conexiones"
+      ]
+    },
+    {
+      "title": "500-hour service",
+      "titleEs": "Servicio de 500 horas",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "intervals": [
+        { "basis": "METER", "meter": "SMR hours", "value": 500, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 6, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Everything in the 250-hour service",
+        "Hydraulic return filter",
+        "Air filter primary element",
+        "Undercarriage wear measurement — percent worn per component, feeding the replacement forecast",
+        "Inspect final drive seals for leaks",
+        "Check and adjust brakes"
+      ],
+      "tasksEs": [
+        "Todo lo del servicio de 250 horas",
+        "Filtro de retorno hidráulico",
+        "Elemento primario del filtro de aire",
+        "Medición de desgaste del tren de rodaje — porcentaje por componente",
+        "Inspeccionar sellos de mandos finales",
+        "Comprobar y ajustar frenos"
+      ]
+    },
+    {
+      "title": "1000-hour service",
+      "titleEs": "Servicio de 1000 horas",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "intervals": [
+        { "basis": "METER", "meter": "SMR hours", "value": 1000, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 12, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Everything in the 500-hour service",
+        "Final drive oil change (both sides)",
+        "Transmission oil and filter",
+        "Cooling system inspection and pressure test",
+        "Valve lash check per the manual",
+        "Full undercarriage wear survey with a replacement-cost forecast"
+      ],
+      "tasksEs": [
+        "Todo lo del servicio de 500 horas",
+        "Cambio de aceite de mandos finales (ambos lados)",
+        "Aceite y filtro de transmisión",
+        "Inspección y prueba de presión del sistema de refrigeración",
+        "Comprobación de holgura de válvulas",
+        "Estudio completo de desgaste del tren de rodaje con previsión de coste"
+      ]
+    },
+    {
+      "title": "2000-hour service",
+      "titleEs": "Servicio de 2000 horas",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "intervals": [
+        { "basis": "METER", "meter": "SMR hours", "value": 2000, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 24, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Everything in the 1000-hour service",
+        "Hydraulic oil change and tank clean",
+        "Coolant change",
+        "DPF ash service per the manufacturer's interval",
+        "Torque converter and transmission inspection"
+      ],
+      "tasksEs": [
+        "Todo lo del servicio de 1000 horas",
+        "Cambio de aceite hidráulico y limpieza del tanque",
+        "Cambio de refrigerante",
+        "Servicio de ceniza del DPF según el intervalo del fabricante",
+        "Inspección del convertidor de par y la transmisión"
+      ]
+    }
+  ],
+
+  "failureModes": [
+    {
+      "code": "FD-SEAL-LEAK", "subunit": "Powertrain", "nameEn": "Final drive seal leak",
+      "nameEs": "Fuga del sello del mando final",
+      "typicalMechanism": "Duo-cone seal face wear or debris damage",
+      "typicalCauses": "Debris packing; overheating; running low on oil",
+      "detectionMethods": "Oil weep at the hub; low oil level at service; SOS iron trending up",
+      "severityDefault": 5
+    },
+    {
+      "code": "UC-CHAIN-ELONG", "subunit": "Undercarriage", "nameEn": "Track chain elongation",
+      "nameEs": "Elongación de la cadena",
+      "typicalMechanism": "Pin and bushing wear",
+      "typicalCauses": "Abrasive material; over-tensioning; high-speed reverse operation",
+      "detectionMethods": "Pitch measurement over a fixed number of links",
+      "severityDefault": 3
+    },
+    {
+      "code": "UC-ROLLER-WEAR", "subunit": "Undercarriage", "nameEn": "Roller / idler wear",
+      "nameEs": "Desgaste de rodillos / ruedas guía",
+      "typicalCauses": "Abrasive conditions; misalignment; seal failure",
+      "detectionMethods": "Wear gauge measurement; visible flange wear; oil weep",
+      "severityDefault": 3
+    },
+    {
+      "code": "HYD-CYL-DRIFT", "subunit": "Hydraulics", "nameEn": "Cylinder drift",
+      "nameEs": "Deriva del cilindro",
+      "typicalMechanism": "Internal seal bypass",
+      "typicalCauses": "Piston seal wear; contamination scoring the bore",
+      "detectionMethods": "Timed drift test with the blade raised",
+      "severityDefault": 3
+    },
+    {
+      "code": "AFT-REGEN-FAULT", "subunit": "Aftertreatment", "nameEn": "DPF regeneration fault",
+      "nameEs": "Fallo de regeneración del DPF",
+      "typicalCauses": "Excessive idle time; interrupted regens; poor fuel quality",
+      "detectionMethods": "Dash lamp; fault code; derate; rising idle-hours ratio",
+      "severityDefault": 3
+    },
+    {
+      "code": "COOL-PLUG", "subunit": "Cooling", "nameEn": "Cooling pack plugging",
+      "nameEs": "Obstrucción del paquete de refrigeración",
+      "typicalCauses": "Dust and chaff; no reversible fan; missed daily check",
+      "detectionMethods": "Rising coolant temperature; visible debris; derate",
+      "severityDefault": 4
+    },
+    {
+      "code": "ENG-SOS-WEAR", "subunit": "Engine", "nameEn": "Abnormal wear metals in oil sample",
+      "nameEs": "Metales de desgaste anormales en la muestra de aceite",
+      "typicalMechanism": "Component wear detected before failure",
+      "typicalCauses": "Bearing wear; liner scuffing; coolant or fuel dilution",
+      "detectionMethods": "SOS trending — Fe, Cu, Cr, Al ppm, viscosity, water and fuel dilution",
+      "severityDefault": 4
+    }
+  ],
+
+  "consumables": [
+    { "name": "Engine oil filter", "nameEs": "Filtro de aceite de motor",
+      "positionCode": "ENG", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 250 },
+    { "name": "Fuel filter (primary)", "nameEs": "Filtro de combustible (primario)",
+      "positionCode": "ENG-FUEL", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 250 },
+    { "name": "Fuel filter (secondary)", "nameEs": "Filtro de combustible (secundario)",
+      "positionCode": "ENG-FUEL", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 500 },
+    { "name": "Hydraulic return filter", "nameEs": "Filtro de retorno hidráulico",
+      "positionCode": "HYD", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 500 },
+    { "name": "Air filter primary element", "nameEs": "Elemento primario del filtro de aire",
+      "positionCode": "ENG", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 500 },
+    { "name": "Air filter safety element", "nameEs": "Elemento de seguridad del filtro de aire",
+      "positionCode": "ENG", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 1000 },
+    { "name": "Transmission filter", "nameEs": "Filtro de transmisión",
+      "positionCode": "PWR-TRANS", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 1000 },
+    { "name": "Engine oil", "nameEs": "Aceite de motor",
+      "positionCode": "ENG", "unit": "L", "replaceIntervalHours": 250 },
+    { "name": "Final drive oil", "nameEs": "Aceite de mando final",
+      "positionCode": "PWR", "unit": "L", "replaceIntervalHours": 1000 },
+    { "name": "Hydraulic oil", "nameEs": "Aceite hidráulico",
+      "positionCode": "HYD", "unit": "L", "replaceIntervalHours": 2000 },
+    { "name": "SOS sample kit", "nameEs": "Kit de muestra SOS",
+      "positionCode": "ENG", "unit": "ea", "qtyPerAssembly": 5, "replaceIntervalHours": 250 }
+  ]
+}

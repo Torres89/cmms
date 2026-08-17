@@ -31,6 +31,18 @@ interface ChatMessage {
   links?: ChatLink[];
 }
 
+/**
+ * Scope the widget to one machine. Any page can dispatch
+ * `window.dispatchEvent(new CustomEvent('atlas:chat-scope', { detail: { assetId, assetName } }))`
+ * to pin the conversation to that asset; the agent then injects a fresh
+ * dossier card on every turn, which is what makes it feel like a specialist
+ * rather than a search box.
+ */
+export interface ChatScope {
+  assetId: number;
+  assetName: string;
+}
+
 const ChatBubble: FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -44,12 +56,37 @@ const ChatBubble: FC = () => {
     }
   ]);
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(() => uuidv4());
+  const [sessionId, setSessionId] = useState(() => uuidv4());
+  const [scope, setScope] = useState<ChatScope | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    const onScope = (event: Event) => {
+      const detail = (event as CustomEvent<ChatScope>).detail;
+      if (!detail?.assetId) return;
+      setScope(detail);
+      // A new subject is a new conversation.
+      setSessionId(uuidv4());
+      setMessages([
+        {
+          role: 'assistant',
+          content: `Talking about ${detail.assetName}. Ask me about its specs, manuals, parts, components or history.`
+        }
+      ]);
+      setOpen(true);
+    };
+    window.addEventListener('atlas:chat-scope', onScope);
+    return () => window.removeEventListener('atlas:chat-scope', onScope);
+  }, []);
+
+  const clearScope = () => {
+    setScope(null);
+    setSessionId(uuidv4());
+  };
 
   const handleSend = async () => {
     const trimmed = input.trim();
@@ -61,20 +98,39 @@ const ChatBubble: FC = () => {
     setLoading(true);
 
     try {
+      const accessToken = localStorage.getItem('accessToken');
       const res = await fetch(`${agentUrl}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, session_id: sessionId })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        },
+        body: JSON.stringify({
+          message: trimmed,
+          session_id: sessionId,
+          asset_id: scope?.assetId ?? null
+        })
       });
 
+      if (res.status === 401) {
+        throw new Error('Your session has expired. Sign in again to keep chatting.');
+      }
+      if (res.status === 402) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || 'AI is not enabled for your company.');
+      }
       if (!res.ok) {
         throw new Error(`Server error: ${res.status}`);
       }
 
       const data = await res.json();
+      if (data.session_id) setSessionId(data.session_id);
+      const notices: string[] = data.notices || [];
       const assistantMsg: ChatMessage = {
         role: 'assistant',
-        content: data.reply || 'No response.',
+        content:
+          (notices.length ? notices.join('\n') + '\n\n' : '') +
+          (data.reply || 'No response.'),
         links: data.links || []
       };
       setMessages((prev) => [...prev, assistantMsg]);
@@ -83,7 +139,7 @@ const ChatBubble: FC = () => {
         ...prev,
         {
           role: 'assistant',
-          content: `⚠️ Could not reach the agent server. Make sure it's running on ${agentUrl}.`
+          content: `⚠️ ${err?.message || `Could not reach the agent server on ${agentUrl}.`}`
         }
       ]);
     } finally {
@@ -170,6 +226,33 @@ const ChatBubble: FC = () => {
               <CloseTwoToneIcon fontSize="small" />
             </IconButton>
           </Box>
+
+          {/* Scoped conversation banner */}
+          {scope && (
+            <Box
+              sx={{
+                px: 2,
+                py: 0.75,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                borderBottom: `1px solid ${theme.colors.alpha.black[10]}`,
+                bgcolor: alpha(theme.colors.primary.main, 0.06)
+              }}
+            >
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                Talking about:
+              </Typography>
+              <Chip
+                label={scope.assetName}
+                size="small"
+                onDelete={clearScope}
+                color="primary"
+                variant="outlined"
+                sx={{ fontSize: 11, fontWeight: 500 }}
+              />
+            </Box>
+          )}
 
           {/* Messages */}
           <Box

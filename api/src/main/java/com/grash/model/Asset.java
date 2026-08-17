@@ -3,7 +3,9 @@ package com.grash.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.grash.model.abstracts.CompanyAudit;
+import com.grash.model.enums.AssetLevel;
 import com.grash.model.enums.AssetStatus;
+import com.grash.model.enums.TrackingClass;
 import com.grash.utils.Helper;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -146,6 +148,48 @@ public class Asset extends CompanyAudit {
     private String power;
 
     private String manufacturer;
+
+    // ------------------------------------------------------------------
+    // Equipment breakdown structure (ISO 14224-aligned)
+    //
+    // Sub-assemblies are Assets too, one level down, linked by parentAsset.
+    // That is why work orders, meters, files, PMs, downtime and history all
+    // work at component level without a line of new code.
+    // ------------------------------------------------------------------
+
+    @Enumerated(EnumType.STRING)
+    private AssetLevel level = AssetLevel.EQUIPMENT;
+
+    /**
+     * Position within the parent, e.g. "SPN", "AX-X-BS", "FD-L". Stable across
+     * component swaps — the position outlives whatever is installed in it.
+     */
+    private String positionCode;
+
+    private String functionalDescription;
+
+    /**
+     * 1 (nuisance) to 5 (the shop stops). Drives PM priority and what goes on
+     * the dashboard.
+     */
+    private Integer criticality;
+
+    /**
+     * What an hour of this machine being down actually costs. Without it,
+     * "should we stock this part" is guesswork.
+     */
+    private Double downtimeCostPerHour;
+
+    private Double replacementCost;
+
+    @Enumerated(EnumType.STRING)
+    private TrackingClass trackingClass = TrackingClass.NON_TRACKED;
+
+    /**
+     * Join key to the failure-mode catalogue, PM template library, spec-key
+     * catalogue and vertical packs, e.g. "CNC_MACHINING_CENTER".
+     */
+    private String equipmentClass;
 
     public Collection<OwnUser> getUsers() {
         Collection<OwnUser> users = new ArrayList<>();

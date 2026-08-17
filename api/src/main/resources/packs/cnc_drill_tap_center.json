@@ -1,0 +1,345 @@
+{
+  "key": "CNC_DRILL_TAP_CENTER",
+  "version": "1.0.0",
+  "label": {
+    "en": "CNC Drill/Tap Center (BT30)",
+    "es": "Centro de taladrado/roscado CNC (BT30)"
+  },
+  "description": "High-speed BT30 drill/tap machining center, typified by the FANUC ROBODRILL alpha-DiB series. Deliberately a separate pack from the 40-taper VMC rather than a variant of it, because the maintenance is genuinely different: there is no centralized way-oil system to check the flow of. The axes run on grease, applied on a fixed operating-hour schedule, and the failure you are guarding against is a grease interval that was missed rather than a lube line that blocked. The turret-style tool changer is fast (about 1.6 s cut-to-cut) and is the other thing that wears.",
+
+  "ebs": [
+    {
+      "positionCode": "SPN", "level": "SUBUNIT", "name": "Spindle assembly",
+      "nameEs": "Conjunto del husillo", "critical": true, "criticality": 5,
+      "functionalDescription": "BT30 high-speed spindle. Small taper, high rpm, low tolerance for contamination in the taper.",
+      "children": [
+        { "positionCode": "SPN-CART", "level": "COMPONENT", "name": "Spindle cartridge",
+          "nameEs": "Cartucho del husillo", "trackingClass": "LIFE_LIMITED",
+          "hourLimit": 15000, "criticality": 5 },
+        { "positionCode": "SPN-GEAR", "level": "COMPONENT", "name": "Spindle-end gear",
+          "nameEs": "Engranaje del extremo del husillo", "criticality": 4,
+          "functionalDescription": "Greased every 200 operating hours per the maintenance manual." },
+        { "positionCode": "SPN-DRAW", "level": "COMPONENT", "name": "Drawbar / clamping unit",
+          "nameEs": "Barra de tiro / unidad de amarre", "criticality": 4 }
+      ]
+    },
+    {
+      "positionCode": "AX-X", "level": "SUBUNIT", "name": "X axis", "nameEs": "Eje X", "criticality": 4,
+      "children": [
+        { "positionCode": "AX-X-BS", "level": "COMPONENT", "name": "X ballscrew",
+          "nameEs": "Husillo de bolas X", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "AX-X-LM", "level": "COMPONENT", "name": "X LM guide blocks",
+          "nameEs": "Patines LM del eje X", "criticality": 4,
+          "functionalDescription": "Greased every 1000 operating hours." }
+      ]
+    },
+    {
+      "positionCode": "AX-Y", "level": "SUBUNIT", "name": "Y axis", "nameEs": "Eje Y", "criticality": 4,
+      "children": [
+        { "positionCode": "AX-Y-BS", "level": "COMPONENT", "name": "Y ballscrew",
+          "nameEs": "Husillo de bolas Y", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "AX-Y-LM", "level": "COMPONENT", "name": "Y LM guide blocks",
+          "nameEs": "Patines LM del eje Y", "criticality": 4 }
+      ]
+    },
+    {
+      "positionCode": "AX-Z", "level": "SUBUNIT", "name": "Z axis", "nameEs": "Eje Z", "criticality": 5,
+      "children": [
+        { "positionCode": "AX-Z-BS", "level": "COMPONENT", "name": "Z ballscrew",
+          "nameEs": "Husillo de bolas Z", "trackingClass": "SERIALIZED", "criticality": 5 },
+        { "positionCode": "AX-Z-LM", "level": "COMPONENT", "name": "Z LM guide blocks",
+          "nameEs": "Patines LM del eje Z", "criticality": 4 },
+        { "positionCode": "AX-Z-BRAKE", "level": "COMPONENT", "name": "Z axis brake",
+          "nameEs": "Freno del eje Z", "criticality": 5,
+          "functionalDescription": "Holds the head on power loss. A failure here drops the spindle." }
+      ]
+    },
+    { "positionCode": "ATC", "level": "SUBUNIT", "name": "Turret tool changer",
+      "nameEs": "Cambiador de herramientas tipo torreta", "critical": true, "criticality": 4,
+      "functionalDescription": "21-pocket turret. Fast, and the second thing on this machine that wears. Its gear is greased every 200 operating hours." },
+    { "positionCode": "COOL", "level": "SUBUNIT", "name": "Coolant system",
+      "nameEs": "Sistema de refrigerante", "criticality": 3 },
+    { "positionCode": "LUBE", "level": "SUBUNIT", "name": "Grease lubrication points",
+      "nameEs": "Puntos de engrase", "critical": true, "criticality": 5,
+      "functionalDescription": "Not a circulating oil system. Grease units are refilled on an operating-hour schedule; there is no pressure alarm to warn you, so the schedule IS the protection." },
+    { "positionCode": "PNEU", "level": "SUBUNIT", "name": "Pneumatics / air prep",
+      "nameEs": "Neumatica / preparacion de aire", "criticality": 3 },
+    { "positionCode": "ELEC", "level": "SUBUNIT", "name": "Electrical cabinet & drives",
+      "nameEs": "Armario electrico y variadores", "criticality": 4 },
+    { "positionCode": "CHIP", "level": "SUBUNIT", "name": "Chip removal & pan",
+      "nameEs": "Evacuacion de virutas", "criticality": 2 },
+    { "positionCode": "ENCL", "level": "SUBUNIT", "name": "Enclosure, covers, doors",
+      "nameEs": "Carcasa, cubiertas, puertas", "criticality": 3 }
+  ],
+
+  "specKeys": [
+    { "group": "Spindle", "key": "max_spindle_rpm", "labelEn": "Max spindle speed",
+      "labelEs": "Velocidad maxima del husillo", "unit": "rpm", "type": "NUM", "required": true, "order": 10 },
+    { "group": "Spindle", "key": "spindle_taper", "labelEn": "Spindle taper",
+      "labelEs": "Cono del husillo", "type": "TEXT", "required": true, "order": 11 },
+    { "group": "Spindle", "key": "spindle_power", "labelEn": "Spindle max power (1 min)",
+      "labelEs": "Potencia maxima del husillo (1 min)", "unit": "kW", "type": "NUM", "required": true, "order": 12 },
+    { "group": "Spindle", "key": "spindle_max_torque", "labelEn": "Spindle max torque (1 min)",
+      "labelEs": "Par maximo del husillo (1 min)", "unit": "Nm", "type": "NUM", "order": 13 },
+
+    { "group": "Travels", "key": "travel_x", "labelEn": "X travel", "labelEs": "Recorrido X",
+      "unit": "mm", "type": "NUM", "required": true, "order": 20 },
+    { "group": "Travels", "key": "travel_y", "labelEn": "Y travel", "labelEs": "Recorrido Y",
+      "unit": "mm", "type": "NUM", "required": true, "order": 21 },
+    { "group": "Travels", "key": "travel_z", "labelEn": "Z travel", "labelEs": "Recorrido Z",
+      "unit": "mm", "type": "NUM", "required": true, "order": 22 },
+    { "group": "Travels", "key": "rapid_traverse", "labelEn": "Rapid traverse",
+      "labelEs": "Avance rapido", "unit": "m/min", "type": "NUM", "order": 23 },
+    { "group": "Travels", "key": "max_feedrate", "labelEn": "Max programmable feed",
+      "labelEs": "Avance maximo programable", "unit": "mm/min", "type": "NUM", "order": 24 },
+
+    { "group": "Table", "key": "table_size", "labelEn": "Table size", "labelEs": "Tamano de la mesa",
+      "type": "TEXT", "required": true, "order": 30 },
+    { "group": "Table", "key": "max_table_load", "labelEn": "Max table load",
+      "labelEs": "Carga maxima de la mesa", "unit": "kg", "type": "NUM", "required": true, "order": 31 },
+
+    { "group": "Lubrication", "key": "lubrication_type", "labelEn": "Lubrication type",
+      "labelEs": "Tipo de lubricacion", "type": "TEXT", "required": true, "order": 40 },
+    { "group": "Lubrication", "key": "guide_grease_spec", "labelEn": "Guide rail grease unit",
+      "labelEs": "Unidad de grasa de guias", "type": "TEXT", "required": true, "order": 41 },
+    { "group": "Lubrication", "key": "guide_grease_volume", "labelEn": "Guide rail grease volume",
+      "labelEs": "Volumen de grasa de guias", "unit": "cm3", "type": "NUM", "order": 42 },
+    { "group": "Lubrication", "key": "ballscrew_grease_spec", "labelEn": "Ballscrew grease unit",
+      "labelEs": "Unidad de grasa de husillos de bolas", "type": "TEXT", "required": true, "order": 43 },
+    { "group": "Lubrication", "key": "ballscrew_grease_volume", "labelEn": "Ballscrew grease volume",
+      "labelEs": "Volumen de grasa de husillos", "unit": "cm3", "type": "NUM", "order": 44 },
+
+    { "group": "Coolant", "key": "coolant_capacity", "labelEn": "Coolant tank capacity",
+      "labelEs": "Capacidad del tanque de refrigerante", "unit": "L", "type": "NUM", "required": true, "order": 50 },
+    { "group": "Coolant", "key": "coolant_concentration", "labelEn": "Target coolant concentration",
+      "labelEs": "Concentracion objetivo", "unit": "%", "type": "NUM", "required": true, "order": 51 },
+    { "group": "Coolant", "key": "coolant_product", "labelEn": "Coolant product",
+      "labelEs": "Producto refrigerante", "type": "TEXT", "order": 52 },
+
+    { "group": "Tool changer", "key": "atc_capacity", "labelEn": "Tool changer capacity",
+      "labelEs": "Capacidad del cambiador", "unit": "tools", "type": "NUM", "required": true, "order": 60 },
+    { "group": "Tool changer", "key": "atc_type", "labelEn": "Tool changer type",
+      "labelEs": "Tipo de cambiador", "type": "TEXT", "order": 61 },
+    { "group": "Tool changer", "key": "max_tool_diameter", "labelEn": "Max tool diameter",
+      "labelEs": "Diametro maximo de herramienta", "unit": "mm", "type": "NUM", "order": 62 },
+    { "group": "Tool changer", "key": "max_tool_length", "labelEn": "Max tool length",
+      "labelEs": "Longitud maxima de herramienta", "unit": "mm", "type": "NUM", "order": 63 },
+    { "group": "Tool changer", "key": "max_tool_weight", "labelEn": "Max tool weight",
+      "labelEs": "Peso maximo de herramienta", "unit": "kg", "type": "NUM", "order": 64 },
+    { "group": "Tool changer", "key": "tool_change_time", "labelEn": "Tool change time (cut to cut)",
+      "labelEs": "Tiempo de cambio (corte a corte)", "unit": "s", "type": "NUM", "order": 65 },
+
+    { "group": "Control", "key": "control_type", "labelEn": "Control", "labelEs": "Control",
+      "type": "TEXT", "required": true, "order": 70 },
+    { "group": "Control", "key": "control_software_version", "labelEn": "Control software version",
+      "labelEs": "Version de software del control", "type": "TEXT", "order": 71 },
+
+    { "group": "Utilities", "key": "electrical_supply", "labelEn": "Electrical supply",
+      "labelEs": "Alimentacion electrica", "type": "TEXT", "required": true, "order": 80 },
+    { "group": "Utilities", "key": "air_requirement", "labelEn": "Air pressure requirement",
+      "labelEs": "Presion de aire requerida", "unit": "MPa", "type": "NUM", "required": true, "order": 81 },
+    { "group": "Utilities", "key": "air_flow", "labelEn": "Air flow requirement",
+      "labelEs": "Caudal de aire requerido", "unit": "L/min", "type": "NUM", "order": 82 },
+    { "group": "Utilities", "key": "machine_weight", "labelEn": "Machine weight",
+      "labelEs": "Peso de la maquina", "unit": "kg", "type": "NUM", "order": 83 },
+
+    { "group": "Accuracy", "key": "positioning_accuracy", "labelEn": "Positioning accuracy (bidirectional)",
+      "labelEs": "Precision de posicionamiento", "unit": "mm", "type": "NUM", "order": 90 },
+    { "group": "Accuracy", "key": "repeatability", "labelEn": "Repeatability (bidirectional)",
+      "labelEs": "Repetibilidad", "unit": "mm", "type": "NUM", "order": 91 }
+  ],
+
+  "meters": [
+    { "name": "Spindle hours",
+      "usageBasis": true, "nameEs": "Horas de husillo", "unit": "h",
+      "updateFrequency": 7, "sourceType": "FOCAS", "dataItem": "SpindleRunTime" },
+    { "name": "Power-on hours", "nameEs": "Horas de encendido", "unit": "h",
+      "updateFrequency": 7, "sourceType": "FOCAS", "dataItem": "PowerOnTime" },
+    { "name": "Cycle count",
+      "usageBasis": true, "nameEs": "Conteo de ciclos", "unit": "cycles",
+      "updateFrequency": 7, "sourceType": "FOCAS", "dataItem": "PartCount" },
+    { "name": "Tool changes", "nameEs": "Cambios de herramienta", "unit": "cycles",
+      "updateFrequency": 30, "sourceType": "FOCAS", "dataItem": "ToolChangeCount" }
+  ],
+
+  "pmTemplates": [
+    {
+      "title": "Daily operator check",
+      "titleEs": "Comprobacion diaria del operador",
+      "priority": "MEDIUM",
+      "intervals": [{ "basis": "CALENDAR", "value": 1, "unit": "days" }],
+      "tasks": [
+        "Coolant level and concentration (refractometer, not by eye)",
+        "Air pressure at the regulator and drain the water separator",
+        "Clear chips from the pan and around the turret",
+        "Wipe the spindle taper and check for nicks or coolant residue",
+        "Visual: leaks, damaged covers, loose fittings",
+        "Listen: abnormal spindle or turret noise during a tool change"
+      ],
+      "tasksEs": [
+        "Nivel y concentracion de refrigerante (refractometro, no a ojo)",
+        "Presion de aire y purgar el separador de agua",
+        "Retirar virutas de la bandeja y alrededor de la torreta",
+        "Limpiar el cono del husillo y revisar golpes o residuos",
+        "Visual: fugas, cubiertas danadas, racores flojos",
+        "Escuchar: ruido anormal del husillo o la torreta al cambiar herramienta"
+      ]
+    },
+    {
+      "title": "200-hour greasing - spindle and turret gears",
+      "titleEs": "Engrase de 200 horas - engranajes de husillo y torreta",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "description": "Per the RoboDrill maintenance manual: grease the gear at the end of the spindle and the turret gear every 200 operating hours. There is no low-pressure alarm on a grease system, so this schedule is the only thing protecting these components.",
+      "intervals": [
+        { "basis": "METER", "meter": "Spindle hours", "value": 200, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 2, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Grease the gear at the end of the spindle",
+        "Grease the turret gear",
+        "Check the turret indexes smoothly through all 21 pockets",
+        "Record the actual spindle-hour reading against this service"
+      ],
+      "tasksEs": [
+        "Engrasar el engranaje del extremo del husillo",
+        "Engrasar el engranaje de la torreta",
+        "Comprobar que la torreta indexa suavemente en las 21 posiciones",
+        "Registrar la lectura real de horas de husillo de este servicio"
+      ]
+    },
+    {
+      "title": "1000-hour greasing - LM guides and ballscrews",
+      "titleEs": "Engrase de 1000 horas - guias LM y husillos de bolas",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "description": "Per the maintenance manual: grease the LM guide blocks and the ball screws every 1000 operating hours. Missing this is how ballscrews on these machines die early.",
+      "intervals": [
+        { "basis": "METER", "meter": "Spindle hours", "value": 1000, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 12, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Refill/replace the guide rail grease unit (A90L-0001-0534#LHLX1007, 700 cm3)",
+        "Refill/replace the ballscrew grease unit (A90L-0001-0534#LHLX1004, 400 cm3)",
+        "Check each axis by hand for binding or roughness before and after",
+        "Record axis load meter readings for the same reference program - a gradual rise is wear",
+        "Inspect the way wipers for damage letting chips past"
+      ],
+      "tasksEs": [
+        "Rellenar/reemplazar la unidad de grasa de guias (A90L-0001-0534#LHLX1007, 700 cm3)",
+        "Rellenar/reemplazar la unidad de grasa de husillos (A90L-0001-0534#LHLX1004, 400 cm3)",
+        "Comprobar cada eje a mano buscando agarrotamiento o aspereza",
+        "Registrar la carga de los ejes con el mismo programa de referencia",
+        "Inspeccionar los limpiadores de guias"
+      ]
+    },
+    {
+      "title": "Annual precision & safety",
+      "titleEs": "Precision y seguridad anual",
+      "priority": "HIGH",
+      "intervals": [{ "basis": "CALENDAR", "value": 12, "unit": "months", "warnAtPercent": 85 }],
+      "tasks": [
+        "Ballbar test - record the result, it is the trend that matters",
+        "Spindle runout at the taper and thermal growth check",
+        "Backlash measurement on each axis",
+        "Verify the Z-axis brake holds the head with power removed",
+        "Door interlock and E-stop verification",
+        "Electrical cabinet clean and filter replacement",
+        "Coolant system full drain, clean and recharge"
+      ],
+      "tasksEs": [
+        "Prueba de barra de bolas - registrar el resultado",
+        "Excentricidad del husillo y crecimiento termico",
+        "Medicion de juego en cada eje",
+        "Verificar que el freno del eje Z sostiene el cabezal sin alimentacion",
+        "Verificacion de enclavamiento de puertas y parada de emergencia",
+        "Limpieza del armario electrico y cambio de filtro",
+        "Vaciado, limpieza y recarga del sistema de refrigerante"
+      ]
+    }
+  ],
+
+  "failureModes": [
+    {
+      "code": "DT-SPN-BRG-SEIZE", "subunit": "Spindle", "nameEn": "Spindle bearing seizure",
+      "nameEs": "Agarrotamiento del rodamiento del husillo",
+      "typicalMechanism": "Fatigue spalling or lubrication breakdown at high rpm",
+      "typicalCauses": "Sustained operation near max rpm beyond duty cycle; coolant ingress past the seal; crash overload; missed 200-hour greasing",
+      "detectionMethods": "Spindle load meter rising for the same program; temperature; audible change; degrading surface finish",
+      "severityDefault": 5
+    },
+    {
+      "code": "DT-SPN-TAPER-DMG", "subunit": "Spindle", "nameEn": "Spindle taper damage / poor tool seating",
+      "nameEs": "Dano en el cono del husillo / mal asiento de herramienta",
+      "typicalMechanism": "Fretting and impact damage in a BT30 taper",
+      "typicalCauses": "Chips in the taper at tool change; dropped tool; over-torqued or damaged pull studs",
+      "detectionMethods": "Runout check with an indicator; visible marking in the taper; chatter that moves with the tool",
+      "severityDefault": 4
+    },
+    {
+      "code": "DT-ATC-INDEX", "subunit": "Tool changer", "nameEn": "Turret index fault / dropped tool",
+      "nameEs": "Fallo de indexado de la torreta / herramienta caida",
+      "typicalMechanism": "Gear and cam wear, or grip force loss",
+      "typicalCauses": "Missed 200-hour turret greasing; low air pressure; chips in the turret; worn grippers",
+      "detectionMethods": "Alarm during tool change; audible knock; visible hesitation while indexing",
+      "severityDefault": 3
+    },
+    {
+      "code": "DT-AX-BS-WEAR", "subunit": "Axis", "nameEn": "Ballscrew wear / backlash",
+      "nameEs": "Desgaste del husillo de bolas / juego",
+      "typicalMechanism": "Ball and raceway wear from inadequate grease",
+      "typicalCauses": "Missed 1000-hour greasing; contamination past damaged wipers; crash",
+      "detectionMethods": "Indicator reversal test; ballbar circularity; rising axis load meter",
+      "severityDefault": 4
+    },
+    {
+      "code": "DT-AX-EXCESS-ERR", "subunit": "Axis", "nameEn": "Excess following error (SV0410 / SV0411)",
+      "nameEs": "Error de seguimiento excesivo (SV0410 / SV0411)",
+      "typicalMechanism": "Commanded position and actual position diverge beyond the parameter limit",
+      "typicalCauses": "Mechanical binding in the guides or ballscrew; way cover dragging; failing servo motor or amplifier; supply voltage sag",
+      "detectionMethods": "Control alarm SV0410 (stopped) or SV0411 (moving); check the axis by hand for binding",
+      "severityDefault": 5
+    },
+    {
+      "code": "DT-Z-BRAKE-FAIL", "subunit": "Axis", "nameEn": "Z-axis brake failure",
+      "nameEs": "Fallo del freno del eje Z",
+      "typicalMechanism": "Brake wear or solenoid failure",
+      "typicalCauses": "Wear; contamination; electrical fault",
+      "detectionMethods": "Head drifts down with power removed - test this deliberately at the annual service",
+      "severityDefault": 5
+    },
+    {
+      "code": "DT-COOL-CONC", "subunit": "Coolant", "nameEn": "Coolant concentration out of spec",
+      "nameEs": "Concentracion de refrigerante fuera de especificacion",
+      "typicalCauses": "Water top-up without concentrate; evaporation; tramp oil",
+      "detectionMethods": "Refractometer",
+      "severityDefault": 2
+    },
+    {
+      "code": "DT-SPN-OVERHEAT", "subunit": "Spindle", "nameEn": "Spindle overheat (SP1241)",
+      "nameEs": "Sobrecalentamiento del husillo (SP1241)",
+      "typicalCauses": "Blocked cooling airflow; clogged filter; sustained heavy cutting beyond duty cycle; failing bearings",
+      "detectionMethods": "Control alarm; spindle temperature; recurrence at normal load means bearings",
+      "severityDefault": 4
+    }
+  ],
+
+  "consumables": [
+    { "name": "Guide rail grease unit (A90L-0001-0534#LHLX1007)",
+      "nameEs": "Unidad de grasa de guias (A90L-0001-0534#LHLX1007)",
+      "positionCode": "LUBE", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 1000 },
+    { "name": "Ballscrew grease unit (A90L-0001-0534#LHLX1004)",
+      "nameEs": "Unidad de grasa de husillos (A90L-0001-0534#LHLX1004)",
+      "positionCode": "LUBE", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 1000 },
+    { "name": "Spindle/turret gear grease", "nameEs": "Grasa para engranajes de husillo y torreta",
+      "positionCode": "SPN", "unit": "cartridge", "qtyPerAssembly": 1, "replaceIntervalHours": 200 },
+    { "name": "Coolant filter", "nameEs": "Filtro de refrigerante",
+      "positionCode": "COOL", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 500 },
+    { "name": "Air filter element", "nameEs": "Elemento de filtro de aire",
+      "positionCode": "PNEU", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalMonths": 6 },
+    { "name": "Cabinet filter mat", "nameEs": "Filtro del armario electrico",
+      "positionCode": "ELEC", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalMonths": 6 },
+    { "name": "Coolant concentrate", "nameEs": "Concentrado de refrigerante",
+      "positionCode": "COOL", "unit": "L", "replaceIntervalMonths": 12 }
+  ]
+}

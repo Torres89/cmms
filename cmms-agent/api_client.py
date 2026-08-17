@@ -1,45 +1,56 @@
+"""
+HTTP client for the Atlas CMMS API.
+
+The client is **per request**: it is constructed with the calling user's own
+token, so every call the agent makes is executed as that user and inherits the
+API's org isolation and role checks. There is no service account.
+"""
+
 import os
+from contextvars import ContextVar
+from typing import Optional
+
 import requests
+
+# The client bound to the request currently being served. Tool modules read it
+# through :func:`get_client` so they never need to know about auth.
+_current_client: ContextVar[Optional["APIClient"]] = ContextVar(
+    "current_api_client", default=None
+)
 
 
 class APIClient:
-    def __init__(self):
-        self.base_url = os.getenv("CMMS_API_URL", "http://localhost:8080")
-        self.email = os.getenv("CMMS_EMAIL")
-        self.password = os.getenv("CMMS_PASSWORD")
-        self._token = None
+    def __init__(self, token: str, base_url: Optional[str] = None):
+        if not token:
+            raise ValueError("APIClient requires the caller's access token")
+        self.base_url = (base_url or os.getenv("CMMS_API_URL", "http://localhost:8080")).rstrip("/")
+        self._token = token
 
-    def _login(self):
+    @classmethod
+    def login(cls, email: str, password: str, base_url: Optional[str] = None) -> "APIClient":
+        """Exchange credentials for a token. Used by the interactive CLI only."""
+        base = (base_url or os.getenv("CMMS_API_URL", "http://localhost:8080")).rstrip("/")
         try:
             resp = requests.post(
-                f"{self.base_url}/auth/signin",
-                json={
-                    "email": self.email,
-                    "password": self.password,
-                    "type": "client",
-                },
+                f"{base}/auth/signin",
+                json={"email": email, "password": password, "type": "client"},
                 timeout=10,
             )
         except requests.ConnectionError:
-            raise ConnectionError(
-                f"Cannot reach API at {self.base_url}. Is the server running?"
-            )
+            raise ConnectionError(f"Cannot reach API at {base}. Is the server running?")
 
         if resp.status_code != 200:
-            raise PermissionError(
-                "Login failed. Check CMMS_EMAIL and CMMS_PASSWORD in .env"
-            )
+            raise PermissionError("Login failed. Check the email and password.")
 
         data = resp.json()
-        self._token = data.get("accessToken") or data.get("token") or data.get("access_token")
-        if not self._token:
+        token = data.get("accessToken") or data.get("token") or data.get("access_token")
+        if not token:
             raise PermissionError(
                 f"Login succeeded but no token found in response: {list(data.keys())}"
             )
+        return cls(token, base)
 
     def _headers(self):
-        if not self._token:
-            self._login()
         return {
             "Authorization": f"Bearer {self._token}",
             "Content-Type": "application/json",
@@ -57,11 +68,7 @@ class APIClient:
             }
 
         if resp.status_code == 401:
-            self._token = None
-            try:
-                resp = requests.request(method, url, headers=self._headers(), **kwargs)
-            except requests.ConnectionError:
-                return {"error": f"Cannot reach API at {self.base_url}."}
+            return {"error": "Your session has expired. Please sign in again."}
 
         if resp.status_code == 403:
             return {
@@ -103,3 +110,23 @@ class APIClient:
 
     def delete(self, path):
         return self._request("DELETE", path)
+
+
+def set_client(client: APIClient):
+    """Bind an API client to the current request context. Returns a reset token."""
+    return _current_client.set(client)
+
+
+def reset_client(token) -> None:
+    _current_client.reset(token)
+
+
+def get_client() -> APIClient:
+    """Return the API client bound to the request being served."""
+    client = _current_client.get()
+    if client is None:
+        raise RuntimeError(
+            "No authenticated API client bound to this request. "
+            "Tools may only be called inside an authenticated agent turn."
+        )
+    return client

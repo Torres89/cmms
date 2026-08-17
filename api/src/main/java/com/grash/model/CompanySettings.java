@@ -43,6 +43,29 @@ public class CompanySettings {
     @JsonIgnore
     private List<Role> roleList = new ArrayList<>();
 
+    // ------------------------------------------------------------------
+    // AI provider — which door this company uses (see AiConfigController)
+    //
+    // Door 1 (their own MCP client) needs nothing here. Door 2 is the
+    // customer's own key; Door 3 is the managed add-on on ours. The key is
+    // stored encrypted and is never returned by a user-facing endpoint — the
+    // settings screen only ever sees a masked suffix.
+    // ------------------------------------------------------------------
+
+    /** ANTHROPIC | OPENAI | CUSTOM | MANAGED | NONE */
+    private String aiProvider = "NONE";
+
+    @JsonIgnore
+    private String aiApiKeyEncrypted;
+
+    private String aiModel;
+
+    /** For OpenAI-compatible endpoints that aren't OpenAI. */
+    private String aiBaseUrl;
+
+    /** Optional self-imposed guard, in tokens per calendar month. */
+    private Long aiMonthlyTokenCap;
+
     public CompanySettings(Company company) {
         this.company = company;
     }

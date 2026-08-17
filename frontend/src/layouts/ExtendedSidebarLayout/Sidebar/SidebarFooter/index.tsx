@@ -15,7 +15,8 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import useAuth from 'src/hooks/useAuth';
 import UpgradeTwoToneIcon from '@mui/icons-material/UpgradeTwoTone';
 import QuestionMarkTwoToneIcon from '@mui/icons-material/QuestionMarkTwoTone';
-import { isCloudVersion } from '../../../../config';
+import CodeTwoToneIcon from '@mui/icons-material/CodeTwoTone';
+import { isCloudVersion, sourceCodeUrl } from '../../../../config';
 import { useContext } from 'react';
 import { CompanySettingsContext } from '../../../../contexts/CompanySettingsContext';
 
@@ -100,6 +101,24 @@ function SidebarFooter() {
           onClick={() => window.open('https://grashjs.github.io/user-guide')}
         >
           <QuestionMarkTwoToneIcon fontSize="small" />
+        </IconButton>
+      </LightTooltip>
+      {/* AGPLv3 s.13: the source offer has to be reachable from the running app. */}
+      <LightTooltip placement="top" arrow title={t('source_code_agpl')}>
+        <IconButton
+          sx={{
+            background: `${theme.colors.alpha.trueWhite[10]}`,
+            color: `${theme.colors.alpha.trueWhite[70]}`,
+            transition: `${theme.transitions.create(['all'])}`,
+
+            '&:hover': {
+              background: `${alpha(theme.colors.alpha.trueWhite[100], 0.2)}`,
+              color: `${theme.colors.alpha.trueWhite[100]}`
+            }
+          }}
+          onClick={() => window.open(sourceCodeUrl, '_blank', 'noopener')}
+        >
+          <CodeTwoToneIcon fontSize="small" />
         </IconButton>
       </LightTooltip>
       {user.superAccountRelations.length === 0 && (

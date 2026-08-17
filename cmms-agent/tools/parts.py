@@ -1,14 +1,6 @@
 import json
 
-_client = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        from api_client import APIClient
-        _client = APIClient()
-    return _client
+from api_client import get_client as _get_client
 
 
 def add_part(

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Phase 4 - telemetry. Optional per customer, and a natural paid setup line.
+
+      The schema lands now even though the collectors are gated on physical
+      access to a machine: it means a customer's fault codes have somewhere to
+      go the day the adapter works, and the fault-code lookup tool has a table
+      to read whether or not any telemetry is connected.
+    -->
+
+    <changeSet id="1786000004-1" author="machine-specialist-platform">
+        <createSequence sequenceName="meter_source_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="meter_source">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="meter_id" type="bigint">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="source_type" type="varchar(32)" defaultValue="MANUAL"/>
+            <column name="config" type="text"/>
+            <column name="last_sync_at" type="timestamp"/>
+            <column name="last_sync_error" type="varchar(2000)"/>
+            <column name="poll_interval_minutes" type="int"/>
+            <column name="enabled" type="boolean" defaultValueBoolean="true"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="meter_source" baseColumnNames="company_id"
+                                 constraintName="fk_meter_source_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="meter_source" baseColumnNames="meter_id"
+                                 constraintName="fk_meter_source_meter"
+                                 referencedTableName="meter" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="1786000004-2" author="machine-specialist-platform">
+        <createSequence sequenceName="fault_event_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="fault_event">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="asset_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(2000)"/>
+            <column name="severity" type="varchar(32)"/>
+            <column name="occurred_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cleared_at" type="timestamp"/>
+            <column name="source" type="varchar(32)" defaultValue="MANUAL"/>
+            <column name="raw_payload" type="text"/>
+            <column name="work_order_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="fault_event" baseColumnNames="company_id"
+                                 constraintName="fk_fault_event_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="fault_event" baseColumnNames="asset_id"
+                                 constraintName="fk_fault_event_asset"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="fault_event" baseColumnNames="work_order_id"
+                                 constraintName="fk_fault_event_work_order"
+                                 referencedTableName="work_order" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="fault_event" indexName="idx_fault_event_asset">
+            <column name="asset_id"/>
+        </createIndex>
+        <createIndex tableName="fault_event" indexName="idx_fault_event_code">
+            <column name="code"/>
+        </createIndex>
+        <createIndex tableName="fault_event" indexName="idx_fault_event_occurred">
+            <column name="occurred_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

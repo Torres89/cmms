@@ -19,6 +19,7 @@ import AttachFileTwoToneIcon from '@mui/icons-material/AttachFileTwoTone';
 import { GroupsTwoTone, People } from '@mui/icons-material';
 import LocationOnTwoToneIcon from '@mui/icons-material/LocationOnTwoTone';
 import Inventory2TwoToneIcon from '@mui/icons-material/Inventory2TwoTone';
+import FactCheckTwoToneIcon from '@mui/icons-material/FactCheckTwoTone';
 import HandymanTwoToneIcon from '@mui/icons-material/HandymanTwoTone';
 import SpeedTwoToneIcon from '@mui/icons-material/SpeedTwoTone';
 import MoveToInboxTwoToneIcon from '@mui/icons-material/MoveToInboxTwoTone';
@@ -142,6 +143,14 @@ const ownMenuItems: MenuItems[] = [
         name: 'assets',
         link: '/app/assets',
         icon: Inventory2TwoToneIcon,
+        permission: PermissionEntity.ASSETS
+      },
+      {
+        // Commissioning is where a machine goes from "we own it" to
+        // "it's documented" — same permission as creating assets.
+        name: 'commissioning',
+        link: '/app/commissioning',
+        icon: FactCheckTwoToneIcon,
         permission: PermissionEntity.ASSETS
       },
       {

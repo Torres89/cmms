@@ -3,7 +3,9 @@ package com.grash.dto;
 import com.grash.model.AssetCategory;
 import com.grash.model.Deprecation;
 import com.grash.dto.FileShowDTO;
+import com.grash.model.enums.AssetLevel;
 import com.grash.model.enums.AssetStatus;
+import com.grash.model.enums.TrackingClass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -72,4 +74,23 @@ public class AssetShowDTO extends AuditShowDTO {
     private String manufacturer;
 
     private String customId;
+
+    // The machine-specialist layer. Without these on the DTO the dossier page,
+    // the pack tooling and every API consumer are blind to the structure.
+
+    private AssetLevel level;
+
+    private String positionCode;
+
+    private String functionalDescription;
+
+    private Integer criticality;
+
+    private Double downtimeCostPerHour;
+
+    private Double replacementCost;
+
+    private TrackingClass trackingClass;
+
+    private String equipmentClass;
 }

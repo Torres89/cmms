@@ -1,0 +1,745 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Phase 1 - the machine dossier.
+
+      Every new column is nullable or defaulted, so existing rows keep working
+      and the frontend can migrate at its own pace. One changeSet per section of
+      the plan, so each is independently revertible.
+    -->
+
+    <!-- 2.1 Equipment breakdown structure ============================== -->
+    <changeSet id="1786000002-1" author="machine-specialist-platform">
+        <addColumn tableName="asset">
+            <column name="level" type="varchar(32)" defaultValue="EQUIPMENT"/>
+            <column name="position_code" type="varchar(64)"/>
+            <column name="functional_description" type="varchar(255)"/>
+            <column name="criticality" type="int"/>
+            <column name="downtime_cost_per_hour" type="double precision"/>
+            <column name="replacement_cost" type="double precision"/>
+            <column name="tracking_class" type="varchar(32)" defaultValue="NON_TRACKED"/>
+            <column name="equipment_class" type="varchar(64)"/>
+        </addColumn>
+        <!-- Backfill: everything that exists today is a machine. -->
+        <update tableName="asset">
+            <column name="level" value="EQUIPMENT"/>
+            <where>level IS NULL</where>
+        </update>
+        <update tableName="asset">
+            <column name="tracking_class" value="NON_TRACKED"/>
+            <where>tracking_class IS NULL</where>
+        </update>
+        <createIndex tableName="asset" indexName="idx_asset_level">
+            <column name="level"/>
+        </createIndex>
+        <createIndex tableName="asset" indexName="idx_asset_equipment_class">
+            <column name="equipment_class"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 2.5 Part identity and sourcing ================================== -->
+    <changeSet id="1786000002-2" author="machine-specialist-platform">
+        <addColumn tableName="part">
+            <column name="manufacturer" type="varchar(255)"/>
+            <column name="mpn" type="varchar(255)"/>
+            <column name="preferred_supplier_sku" type="varchar(255)"/>
+            <column name="lead_time_days_typical" type="double precision"/>
+            <column name="criticality" type="int"/>
+            <column name="shelf_life_days" type="int"/>
+            <column name="storage_conditions" type="varchar(255)"/>
+            <column name="stock_recommended" type="boolean" defaultValueBoolean="false"/>
+            <column name="reorder_point" type="double precision"/>
+        </addColumn>
+        <createIndex tableName="part" indexName="idx_part_mpn">
+            <column name="mpn"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 2.7 Multi-counter PM triggering ================================= -->
+    <changeSet id="1786000002-3" author="machine-specialist-platform">
+        <addColumn tableName="preventive_maintenance">
+            <column name="trigger_mode" type="varchar(32)" defaultValue="WHICHEVER_FIRST"/>
+            <column name="equipment_class" type="varchar(64)"/>
+            <column name="template_key" type="varchar(128)"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- 2.8 Documents (the knowledge layer's anchor) ===================== -->
+    <changeSet id="1786000002-4" author="machine-specialist-platform">
+        <createSequence sequenceName="document_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="document">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="file_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="asset_id" type="bigint"/>
+            <column name="equipment_class" type="varchar(64)"/>
+            <column name="doc_type" type="varchar(32)" defaultValue="OTHER"/>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="manufacturer" type="varchar(255)"/>
+            <column name="revision" type="varchar(64)"/>
+            <column name="language" type="varchar(8)"/>
+            <column name="page_count" type="int"/>
+            <column name="ingest_status" type="varchar(32)" defaultValue="PENDING"/>
+            <column name="ingested_at" type="timestamp"/>
+            <column name="checksum" type="varchar(128)"/>
+            <column name="ingest_error" type="varchar(2000)"/>
+            <column name="chunk_count" type="int" defaultValueNumeric="0"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="document" baseColumnNames="company_id"
+                                 constraintName="fk_document_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="document" baseColumnNames="file_id"
+                                 constraintName="fk_document_file"
+                                 referencedTableName="file" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="document" baseColumnNames="asset_id"
+                                 constraintName="fk_document_asset"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="document" indexName="idx_document_asset">
+            <column name="asset_id"/>
+        </createIndex>
+        <createIndex tableName="document" indexName="idx_document_class">
+            <column name="equipment_class"/>
+        </createIndex>
+        <createIndex tableName="document" indexName="idx_document_status">
+            <column name="ingest_status"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 2.2 Typed spec sheet with provenance ============================ -->
+    <changeSet id="1786000002-5" author="machine-specialist-platform">
+        <createSequence sequenceName="asset_spec_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="asset_spec">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="asset_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spec_group" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spec_key" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="label" type="varchar(255)"/>
+            <column name="value_text" type="varchar(2000)"/>
+            <column name="value_num" type="double precision"/>
+            <column name="unit" type="varchar(64)"/>
+            <column name="source" type="varchar(32)" defaultValue="MANUAL_ENTRY"/>
+            <column name="source_document_id" type="bigint"/>
+            <column name="source_page" type="int"/>
+            <column name="confidence" type="double precision"/>
+            <column name="verified_by_id" type="bigint"/>
+            <column name="verified_at" type="timestamp"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="asset_spec" baseColumnNames="company_id"
+                                 constraintName="fk_asset_spec_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="asset_spec" baseColumnNames="asset_id"
+                                 constraintName="fk_asset_spec_asset"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="asset_spec" baseColumnNames="source_document_id"
+                                 constraintName="fk_asset_spec_document"
+                                 referencedTableName="document" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="asset_spec" baseColumnNames="verified_by_id"
+                                 constraintName="fk_asset_spec_verified_by"
+                                 referencedTableName="own_user" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="asset_spec" indexName="idx_asset_spec_asset">
+            <column name="asset_id"/>
+        </createIndex>
+        <createIndex tableName="asset_spec" indexName="idx_asset_spec_key">
+            <column name="spec_key"/>
+        </createIndex>
+        <addUniqueConstraint tableName="asset_spec" columnNames="asset_id, spec_key"
+                             constraintName="uq_asset_spec_asset_key"/>
+    </changeSet>
+
+    <changeSet id="1786000002-6" author="machine-specialist-platform">
+        <createSequence sequenceName="spec_key_catalog_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="spec_key_catalog">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="equipment_class" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spec_group" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spec_key" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="label_en" type="varchar(255)"/>
+            <column name="label_es" type="varchar(255)"/>
+            <column name="unit" type="varchar(64)"/>
+            <column name="value_type" type="varchar(16)" defaultValue="TEXT"/>
+            <column name="required" type="boolean" defaultValueBoolean="false"/>
+            <column name="display_order" type="int"/>
+            <column name="system_seeded" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="spec_key_catalog" baseColumnNames="company_id"
+                                 constraintName="fk_spec_key_catalog_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="spec_key_catalog" indexName="idx_spec_key_catalog_class">
+            <column name="equipment_class"/>
+        </createIndex>
+        <addUniqueConstraint tableName="spec_key_catalog"
+                             columnNames="company_id, equipment_class, spec_key"
+                             constraintName="uq_spec_key_catalog"/>
+    </changeSet>
+
+    <!-- 2.3 Serialized components and the back-to-birth ledger ========== -->
+    <changeSet id="1786000002-7" author="machine-specialist-platform">
+        <createSequence sequenceName="component_instance_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="component_instance">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="serial_number" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="part_type_id" type="bigint"/>
+            <column name="manufacturer" type="varchar(255)"/>
+            <column name="mpn" type="varchar(255)"/>
+            <column name="manufacture_date" type="timestamp"/>
+            <column name="acquired_at" type="timestamp"/>
+            <column name="acquisition_cost" type="double precision"/>
+            <column name="status" type="varchar(32)" defaultValue="IN_STOCK"/>
+            <column name="current_position_id" type="bigint"/>
+            <column name="total_hours" type="double precision" defaultValueNumeric="0"/>
+            <column name="total_cycles" type="double precision" defaultValueNumeric="0"/>
+            <column name="hours_since_overhaul" type="double precision" defaultValueNumeric="0"/>
+            <column name="cycles_since_overhaul" type="double precision" defaultValueNumeric="0"/>
+            <column name="hour_limit" type="double precision"/>
+            <column name="cycle_limit" type="double precision"/>
+            <column name="calendar_limit_months" type="int"/>
+            <column name="image_id" type="bigint"/>
+            <column name="notes" type="varchar(2000)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="component_instance" baseColumnNames="company_id"
+                                 constraintName="fk_component_instance_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="component_instance" baseColumnNames="part_type_id"
+                                 constraintName="fk_component_instance_part"
+                                 referencedTableName="part" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="component_instance" baseColumnNames="current_position_id"
+                                 constraintName="fk_component_instance_position"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="component_instance" baseColumnNames="image_id"
+                                 constraintName="fk_component_instance_image"
+                                 referencedTableName="file" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="component_instance" indexName="idx_component_instance_position">
+            <column name="current_position_id"/>
+        </createIndex>
+        <createIndex tableName="component_instance" indexName="idx_component_instance_serial">
+            <column name="serial_number"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1786000002-8" author="machine-specialist-platform">
+        <createSequence sequenceName="component_event_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="component_event">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="component_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position_id" type="bigint"/>
+            <column name="occurred_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position_meter_value" type="double precision"/>
+            <column name="component_hours" type="double precision"/>
+            <column name="component_cycles" type="double precision"/>
+            <column name="work_order_id" type="bigint"/>
+            <column name="performed_by_id" type="bigint"/>
+            <column name="vendor_id" type="bigint"/>
+            <column name="cost" type="double precision"/>
+            <column name="reason" type="varchar(2000)"/>
+            <column name="document_reference" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="component_event" baseColumnNames="company_id"
+                                 constraintName="fk_component_event_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="component_event" baseColumnNames="component_id"
+                                 constraintName="fk_component_event_component"
+                                 referencedTableName="component_instance" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="component_event" baseColumnNames="position_id"
+                                 constraintName="fk_component_event_position"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="component_event" baseColumnNames="work_order_id"
+                                 constraintName="fk_component_event_work_order"
+                                 referencedTableName="work_order" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="component_event" baseColumnNames="performed_by_id"
+                                 constraintName="fk_component_event_user"
+                                 referencedTableName="own_user" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="component_event" baseColumnNames="vendor_id"
+                                 constraintName="fk_component_event_vendor"
+                                 referencedTableName="vendor" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="component_event" indexName="idx_component_event_component">
+            <column name="component_id"/>
+        </createIndex>
+        <createIndex tableName="component_event" indexName="idx_component_event_occurred">
+            <column name="occurred_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Envers revision table for the two compliance-relevant entities. -->
+    <changeSet id="1786000002-9" author="machine-specialist-platform">
+        <sql splitStatements="false"><![CDATA[
+            CREATE TABLE IF NOT EXISTS component_event_aud (
+              id                  BIGINT NOT NULL,
+              rev                 INTEGER NOT NULL,
+              revtype             SMALLINT,
+              company_id          BIGINT,
+              created_at          TIMESTAMP,
+              updated_at          TIMESTAMP,
+              created_by          BIGINT,
+              updated_by          BIGINT,
+              component_id        BIGINT,
+              type                VARCHAR(32),
+              position_id         BIGINT,
+              occurred_at         TIMESTAMP,
+              position_meter_value DOUBLE PRECISION,
+              component_hours     DOUBLE PRECISION,
+              component_cycles    DOUBLE PRECISION,
+              work_order_id       BIGINT,
+              performed_by_id     BIGINT,
+              vendor_id           BIGINT,
+              cost                DOUBLE PRECISION,
+              reason              VARCHAR(2000),
+              document_reference  VARCHAR(255),
+              PRIMARY KEY (id, rev)
+            );
+        ]]></sql>
+    </changeSet>
+
+    <!-- 2.4 Bill of materials =========================================== -->
+    <changeSet id="1786000002-10" author="machine-specialist-platform">
+        <createSequence sequenceName="asset_bom_line_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="asset_bom_line">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="asset_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="part_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position_code" type="varchar(64)"/>
+            <column name="qty_per_assembly" type="double precision" defaultValueNumeric="1"/>
+            <column name="consumable" type="boolean" defaultValueBoolean="false"/>
+            <column name="replace_interval_hours" type="double precision"/>
+            <column name="replace_interval_months" type="int"/>
+            <column name="source_document_id" type="bigint"/>
+            <column name="source_page" type="int"/>
+            <column name="notes" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="asset_bom_line" baseColumnNames="company_id"
+                                 constraintName="fk_asset_bom_line_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="asset_bom_line" baseColumnNames="asset_id"
+                                 constraintName="fk_asset_bom_line_asset"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="asset_bom_line" baseColumnNames="part_id"
+                                 constraintName="fk_asset_bom_line_part"
+                                 referencedTableName="part" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="asset_bom_line" baseColumnNames="source_document_id"
+                                 constraintName="fk_asset_bom_line_document"
+                                 referencedTableName="document" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="asset_bom_line" indexName="idx_asset_bom_line_asset">
+            <column name="asset_id"/>
+        </createIndex>
+        <createIndex tableName="asset_bom_line" indexName="idx_asset_bom_line_part">
+            <column name="part_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 2.5 Supplier offers and cross references ======================== -->
+    <changeSet id="1786000002-11" author="machine-specialist-platform">
+        <createSequence sequenceName="part_supplier_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="part_supplier">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="part_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vendor_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="supplier_sku" type="varchar(255)"/>
+            <column name="product_url" type="varchar(1000)"/>
+            <column name="unit_price" type="double precision"/>
+            <column name="currency" type="varchar(8)"/>
+            <column name="moq" type="int"/>
+            <column name="lead_time_days" type="int"/>
+            <column name="price_checked_at" type="timestamp"/>
+            <column name="preferred" type="boolean" defaultValueBoolean="false"/>
+            <column name="notes" type="varchar(1000)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="part_supplier" baseColumnNames="company_id"
+                                 constraintName="fk_part_supplier_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="part_supplier" baseColumnNames="part_id"
+                                 constraintName="fk_part_supplier_part"
+                                 referencedTableName="part" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="part_supplier" baseColumnNames="vendor_id"
+                                 constraintName="fk_part_supplier_vendor"
+                                 referencedTableName="vendor" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="part_supplier" indexName="idx_part_supplier_part">
+            <column name="part_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1786000002-12" author="machine-specialist-platform">
+        <createSequence sequenceName="part_cross_reference_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="part_cross_reference">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="part_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="alternate_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(32)" defaultValue="EQUIVALENT"/>
+            <column name="justification" type="varchar(2000)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="part_cross_reference" baseColumnNames="company_id"
+                                 constraintName="fk_part_cross_reference_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="part_cross_reference" baseColumnNames="part_id"
+                                 constraintName="fk_part_cross_reference_part"
+                                 referencedTableName="part" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="part_cross_reference" baseColumnNames="alternate_id"
+                                 constraintName="fk_part_cross_reference_alternate"
+                                 referencedTableName="part" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="part_cross_reference" indexName="idx_part_cross_reference_part">
+            <column name="part_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 2.7 Maintenance intervals ======================================= -->
+    <changeSet id="1786000002-13" author="machine-specialist-platform">
+        <createSequence sequenceName="maintenance_interval_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="maintenance_interval">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="preventive_maintenance_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="basis" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="meter_id" type="bigint"/>
+            <column name="interval_value" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit" type="varchar(32)"/>
+            <column name="warn_at_percent" type="double precision" defaultValueNumeric="90"/>
+            <column name="last_completed_value" type="double precision"/>
+            <column name="last_completed_at" type="timestamp"/>
+            <column name="description" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="maintenance_interval" baseColumnNames="company_id"
+                                 constraintName="fk_maintenance_interval_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="maintenance_interval"
+                                 baseColumnNames="preventive_maintenance_id"
+                                 constraintName="fk_maintenance_interval_pm"
+                                 referencedTableName="preventive_maintenance" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="maintenance_interval" baseColumnNames="meter_id"
+                                 constraintName="fk_maintenance_interval_meter"
+                                 referencedTableName="meter" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="maintenance_interval" indexName="idx_maintenance_interval_pm">
+            <column name="preventive_maintenance_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 2.6 Failure taxonomy ============================================ -->
+    <changeSet id="1786000002-14" author="machine-specialist-platform">
+        <createSequence sequenceName="failure_mode_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="failure_mode">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="equipment_class" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subunit" type="varchar(128)"/>
+            <column name="code" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_en" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_es" type="varchar(255)"/>
+            <column name="description" type="varchar(2000)"/>
+            <column name="typical_mechanism" type="varchar(2000)"/>
+            <column name="typical_causes" type="varchar(2000)"/>
+            <column name="detection_methods" type="varchar(2000)"/>
+            <column name="severity_default" type="int"/>
+            <column name="system_seeded" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="failure_mode" baseColumnNames="company_id"
+                                 constraintName="fk_failure_mode_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="failure_mode" indexName="idx_failure_mode_class">
+            <column name="equipment_class"/>
+        </createIndex>
+        <createIndex tableName="failure_mode" indexName="idx_failure_mode_code">
+            <column name="code"/>
+        </createIndex>
+        <addUniqueConstraint tableName="failure_mode" columnNames="company_id, code"
+                             constraintName="uq_failure_mode_company_code"/>
+    </changeSet>
+
+    <changeSet id="1786000002-15" author="machine-specialist-platform">
+        <createSequence sequenceName="failure_event_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="failure_event">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+            <column name="work_order_id" type="bigint"/>
+            <column name="asset_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="component_id" type="bigint"/>
+            <column name="failure_mode_id" type="bigint"/>
+            <column name="mechanism" type="varchar(2000)"/>
+            <column name="cause" type="varchar(2000)"/>
+            <column name="detection_method" type="varchar(255)"/>
+            <column name="detected_at" type="varchar(32)"/>
+            <column name="severity" type="int"/>
+            <column name="downtime_minutes" type="int"/>
+            <column name="repair_cost" type="double precision"/>
+            <column name="corrective_action" type="varchar(4000)"/>
+            <column name="preventive_recommendation" type="varchar(4000)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="failure_event" baseColumnNames="company_id"
+                                 constraintName="fk_failure_event_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="failure_event" baseColumnNames="work_order_id"
+                                 constraintName="fk_failure_event_work_order"
+                                 referencedTableName="work_order" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="failure_event" baseColumnNames="asset_id"
+                                 constraintName="fk_failure_event_asset"
+                                 referencedTableName="asset" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="failure_event" baseColumnNames="component_id"
+                                 constraintName="fk_failure_event_component"
+                                 referencedTableName="component_instance" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <addForeignKeyConstraint baseTableName="failure_event" baseColumnNames="failure_mode_id"
+                                 constraintName="fk_failure_event_mode"
+                                 referencedTableName="failure_mode" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="failure_event" indexName="idx_failure_event_asset">
+            <column name="asset_id"/>
+        </createIndex>
+        <createIndex tableName="failure_event" indexName="idx_failure_event_mode">
+            <column name="failure_mode_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1786000002-16" author="machine-specialist-platform">
+        <sql splitStatements="false"><![CDATA[
+            CREATE TABLE IF NOT EXISTS failure_event_aud (
+              id                        BIGINT NOT NULL,
+              rev                       INTEGER NOT NULL,
+              revtype                   SMALLINT,
+              company_id                BIGINT,
+              created_at                TIMESTAMP,
+              updated_at                TIMESTAMP,
+              created_by                BIGINT,
+              updated_by                BIGINT,
+              work_order_id             BIGINT,
+              asset_id                  BIGINT,
+              component_id              BIGINT,
+              failure_mode_id           BIGINT,
+              mechanism                 VARCHAR(2000),
+              cause                     VARCHAR(2000),
+              detection_method          VARCHAR(255),
+              detected_at               VARCHAR(32),
+              severity                  INTEGER,
+              downtime_minutes          INTEGER,
+              repair_cost               DOUBLE PRECISION,
+              corrective_action         VARCHAR(4000),
+              preventive_recommendation VARCHAR(4000),
+              PRIMARY KEY (id, rev)
+            );
+        ]]></sql>
+    </changeSet>
+
+    <!-- 2.10 Polymorphic custom fields ================================== -->
+    <changeSet id="1786000002-17" author="machine-specialist-platform">
+        <addColumn tableName="custom_field">
+            <column name="entity_type" type="varchar(32)"/>
+            <column name="entity_id" type="bigint"/>
+            <column name="field_group" type="varchar(128)"/>
+            <column name="display_order" type="int"/>
+            <column name="company_id" type="bigint"/>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="updated_by" type="bigint"/>
+        </addColumn>
+        <!-- Existing rows were all vendor fields; carry them over verbatim. -->
+        <sql splitStatements="false"><![CDATA[
+            UPDATE custom_field SET entity_type = 'VENDOR', entity_id = vendor_id
+             WHERE entity_id IS NULL AND vendor_id IS NOT NULL;
+
+            UPDATE custom_field cf
+               SET company_id = v.company_id
+              FROM vendor v
+             WHERE cf.vendor_id = v.id AND cf.company_id IS NULL;
+
+            -- Anything left without a company can't be scoped to a tenant and
+            -- would break the isolation check on load.
+            DELETE FROM custom_field WHERE company_id IS NULL;
+        ]]></sql>
+        <dropColumn tableName="custom_field" columnName="vendor_id"/>
+        <addNotNullConstraint tableName="custom_field" columnName="entity_type" columnDataType="varchar(32)"/>
+        <addNotNullConstraint tableName="custom_field" columnName="entity_id" columnDataType="bigint"/>
+        <addNotNullConstraint tableName="custom_field" columnName="company_id" columnDataType="bigint"/>
+        <addForeignKeyConstraint baseTableName="custom_field" baseColumnNames="company_id"
+                                 constraintName="fk_custom_field_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <modifyDataType tableName="custom_field" columnName="value" newDataType="varchar(4000)"/>
+        <createIndex tableName="custom_field" indexName="idx_custom_field_entity">
+            <column name="entity_type"/>
+            <column name="entity_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

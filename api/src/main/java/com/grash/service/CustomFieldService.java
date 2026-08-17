@@ -4,12 +4,12 @@ import com.grash.dto.CustomFieldPatchDTO;
 import com.grash.exception.CustomException;
 import com.grash.mapper.CustomFieldMapper;
 import com.grash.model.CustomField;
-import com.grash.model.OwnUser;
-import com.grash.model.enums.RoleType;
+import com.grash.model.enums.CustomFieldEntity;
 import com.grash.repository.CustomFieldRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -18,11 +18,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CustomFieldService {
     private final CustomFieldRepository customFieldRepository;
-    private final VendorService vendorService;
     private final CustomFieldMapper customFieldMapper;
 
-    public CustomField create(CustomField CustomField) {
-        return customFieldRepository.save(CustomField);
+    public CustomField create(CustomField customField) {
+        return customFieldRepository.save(customField);
     }
 
     public CustomField update(Long id, CustomFieldPatchDTO customField) {
@@ -42,5 +41,17 @@ public class CustomFieldService {
 
     public Optional<CustomField> findById(Long id) {
         return customFieldRepository.findById(id);
+    }
+
+    /**
+     * Every custom field on one entity, scoped to the caller's company.
+     */
+    public Collection<CustomField> findForEntity(CustomFieldEntity entityType, Long entityId, Long companyId) {
+        return customFieldRepository.findByEntityTypeAndEntityIdAndCompany_Id(entityType, entityId, companyId);
+    }
+
+    @Transactional
+    public void deleteForEntity(CustomFieldEntity entityType, Long entityId) {
+        customFieldRepository.deleteByEntityTypeAndEntityId(entityType, entityId);
     }
 }

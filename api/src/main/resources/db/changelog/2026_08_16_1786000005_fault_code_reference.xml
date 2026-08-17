@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Shared fault-code reference data, plus the audit columns the entity needs.
+
+      Rows with a NULL company_id are readable by every tenant. This is the one
+      place a shared corpus is appropriate: these are published manufacturer
+      alarm codes, not anyone's documents. A customer's own enrichment is
+      written with their company_id and wins on lookup.
+    -->
+
+    <changeSet id="1786000005-1" author="machine-specialist-platform">
+        <addColumn tableName="fault_code_dictionary">
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+        </addColumn>
+        <sql>
+            UPDATE fault_code_dictionary SET created_at = now(), updated_at = now()
+             WHERE created_at IS NULL;
+        </sql>
+    </changeSet>
+
+    <!--
+      Haas mill alarms. Alarm 121 in particular is the one that precedes an
+      expensive spindle: the axis lube system is the most critical maintenance
+      system on the machine, and this alarm is it telling you so.
+    -->
+    <changeSet id="1786000005-2" author="machine-specialist-platform">
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO fault_code_dictionary
+                (company_id, equipment_class, manufacturer, code, description_en, description_es,
+                 severity, likely_causes, recommended_action, source, created_at, updated_at)
+            VALUES
+            (NULL, 'CNC_MACHINING_CENTER_VMC', 'Haas Automation', '121',
+             'LOW LUBE OR LOW PRESSURE - the axis lubrication reservoir is low or empty, or the system is not developing pressure.',
+             'LUBRICACION BAJA O PRESION BAJA - el deposito de lubricacion de ejes esta bajo o vacio, o el sistema no genera presion.',
+             'HIGH',
+             'Empty way-lube reservoir; blocked or crushed lube line; failed metering unit; failed pressure switch; wrong oil viscosity clogging the system.',
+             'Do not keep running the machine. Check the reservoir level, then verify FLOW at each lubrication point during a pump cycle - the reservoir being full tells you nothing about whether oil is arriving. The Bijur pump delivers roughly 3 ml at about 35 psi every 30 minutes.',
+             'SEEDED', now(), now()),
+
+            (NULL, 'CNC_MACHINING_CENTER_VMC', 'Haas Automation', '102',
+             'SERVOS OFF - the servo motors are off; the tool changer, coolant pump and spindle are stopped.',
+             'SERVOS APAGADOS - los servomotores estan apagados; el cambiador, la bomba de refrigerante y el husillo estan detenidos.',
+             'MEDIUM',
+             'Emergency stop pressed; a companion alarm turned the servos off; low air pressure; overvoltage or undervoltage; door interlock.',
+             'Read the alarm history for the alarm that came first - 102 is usually the consequence, not the cause.',
+             'SEEDED', now(), now()),
+
+            (NULL, 'CNC_MACHINING_CENTER_VMC', 'Haas Automation', '119',
+             'OVERVOLTAGE - incoming line voltage is above maximum. Servos off; spindle, tool changer and coolant pump stop.',
+             'SOBRETENSION - la tension de entrada supera el maximo.',
+             'HIGH',
+             'Supply voltage high; transformer tap set wrong; regen resistor circuit fault.',
+             'Measure the incoming line voltage under load and check the transformer tap setting before restarting.',
+             'SEEDED', now(), now());
+        ]]></sql>
+    </changeSet>
+
+    <!--
+      Fanuc servo alarms. SV0410 and SV0411 are the same measurement taken in
+      two states, and the distinction matters diagnostically: stopped means the
+      axis could not hold position, moving means it could not keep up.
+    -->
+    <changeSet id="1786000005-3" author="machine-specialist-platform">
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO fault_code_dictionary
+                (company_id, equipment_class, manufacturer, code, description_en, description_es,
+                 severity, likely_causes, recommended_action, source, created_at, updated_at)
+            VALUES
+            (NULL, NULL, 'FANUC', 'SV0410',
+             'EXCESS ERROR (STOP) - positioning deviation for an axis exceeded the limit in parameter 1829 while the axis was stopped. The machine stops immediately, like an emergency stop.',
+             'ERROR EXCESIVO (PARADO) - la desviacion de posicion del eje supero el limite del parametro 1829 con el eje detenido.',
+             'HIGH',
+             'Mechanical binding - a damaged ballscrew, failed linear guide rollers, or a way cover dragging; insufficient or failing servo motor torque; supply voltage sag under load; brake not releasing.',
+             'Do not simply reset and continue. Check the axis by hand for binding and inspect the ballscrew and guides. An axis that cannot hold position while stopped is a mechanical problem until proven otherwise.',
+             'SEEDED', now(), now()),
+
+            (NULL, NULL, 'FANUC', 'SV0411',
+             'EXCESS ERROR (MOVING) - following error exceeded the limit while the axis was in motion. Protects against the tool deviating from the programmed path.',
+             'ERROR EXCESIVO (EN MOVIMIENTO) - el error de seguimiento supero el limite con el eje en movimiento.',
+             'HIGH',
+             'Mechanical binding or increasing friction; commanded feed or acceleration beyond what the axis can deliver; servo parameters wrong after a change; failing motor or amplifier.',
+             'Compare the axis load meter against its normal value for the same program. A gradual rise over weeks is wear; a sudden jump is damage.',
+             'SEEDED', now(), now()),
+
+            (NULL, NULL, 'FANUC', 'SV0401',
+             'SERVO V-READY OFF - the servo amplifier ready signal dropped while the control expected it.',
+             'SERVO V-READY APAGADO - la senal de listo del amplificador se perdio.',
+             'HIGH',
+             'Amplifier fault; power supply module fault; loose connection between the control and the amplifier; emergency stop chain.',
+             'Check the amplifier status LEDs and the connection between the control and the drive before replacing anything.',
+             'SEEDED', now(), now()),
+
+            (NULL, 'CNC_DRILL_TAP_CENTER', 'FANUC', 'SP1241',
+             'SPINDLE OVERHEAT - the spindle motor or amplifier reported an over-temperature condition.',
+             'SOBRECALENTAMIENTO DEL HUSILLO - el motor o el amplificador del husillo reporto exceso de temperatura.',
+             'HIGH',
+             'Blocked cooling airflow; clogged cabinet or spindle cooling filter; sustained heavy cutting beyond duty cycle; failing spindle bearings generating heat.',
+             'Let the spindle cool and check airflow and filters first. If the temperature climbs again at normal load, treat it as a bearing problem and stop cutting.',
+             'SEEDED', now(), now());
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -96,6 +96,7 @@ import AddFileModal from './AddFileModal';
 import { useBrand } from '../../../../hooks/useBrand';
 import { useLicenseEntitlement } from '../../../../hooks/useLicenseEntitlement';
 import { getErrorMessage } from '../../../../utils/api';
+import FailureCaptureDialog from './FailureCaptureDialog';
 
 const LabelWrapper = styled(Box)(
   ({ theme }) => `
@@ -292,6 +293,12 @@ export default function WorkOrderDetails(props: WorkOrderDetailsProps) {
     () => debounce(onPartQuantityChange, 1500),
     []
   );
+  // Asked once, right after close, while the technician still remembers.
+  const [openFailureCapture, setOpenFailureCapture] = useState<boolean>(false);
+  const askAboutFailure = () => {
+    if (workOrder?.asset?.id) setOpenFailureCapture(true);
+  };
+
   const onCompleteWO = (
     signature: string | undefined,
     feedback: string | undefined
@@ -305,6 +312,7 @@ export default function WorkOrderDetails(props: WorkOrderDetailsProps) {
       })
     )
       .then(() => dispatch(getLabors(workOrder?.id)))
+      .then(askAboutFailure)
       .finally(() => setChangingStatus(false));
   };
   const groupRelations = (
@@ -589,11 +597,16 @@ export default function WorkOrderDetails(props: WorkOrderDetailsProps) {
                           } else return;
                         }
                         setChangingStatus(true);
+                        const newStatus = event.target.value;
                         dispatch(
                           changeWorkOrderStatus(workOrder?.id, {
-                            status: event.target.value
+                            status: newStatus
                           })
-                        ).finally(() => setChangingStatus(false));
+                        )
+                          .then(() => {
+                            if (newStatus === 'COMPLETE') askAboutFailure();
+                          })
+                          .finally(() => setChangingStatus(false));
                       }}
                       disabled={
                         !hasEditPermission(
@@ -1395,6 +1408,14 @@ export default function WorkOrderDetails(props: WorkOrderDetailsProps) {
         }}
         onComplete={onCompleteWO}
       />
+      {workOrder?.asset?.id && (
+        <FailureCaptureDialog
+          open={openFailureCapture}
+          workOrderId={workOrder.id}
+          assetId={workOrder.asset.id}
+          onClose={() => setOpenFailureCapture(false)}
+        />
+      )}
       <Menu anchorEl={anchorEl} open={openMenu} onClose={handleCloseMenu}>
         <MenuItem
           onClick={() => {

@@ -68,6 +68,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AssetsScreen from '../screens/assets/AssetsScreen';
 import LocationsScreen from '../screens/locations/LocationsScreen';
 import AssetDetails from '../screens/assets/details';
+import AssetChatScreen from '../screens/assets/AssetChatScreen';
 import EditAssetScreen from '../screens/assets/EditAssetScreen';
 import LocationDetails from '../screens/locations/details';
 import EditLocationScreen from '../screens/locations/EditLocationScreen';
@@ -283,6 +284,11 @@ function RootNavigator() {
         name="AssetDetails"
         component={AssetDetails}
         options={{ title: t('asset') }}
+      />
+      <Stack.Screen
+        name="AssetChat"
+        component={AssetChatScreen}
+        options={{ title: t('assistant') }}
       />
       <Stack.Screen
         name="EditAsset"

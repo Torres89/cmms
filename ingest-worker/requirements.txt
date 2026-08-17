@@ -1,0 +1,22 @@
+# Core service
+fastapi
+uvicorn[standard]
+python-dotenv
+psycopg[binary]
+psycopg_pool
+boto3
+
+# Parsing. Docling keeps table structure, which matters more than anything else
+# here: maintenance manuals are mostly tables.
+docling
+pypdf
+
+# OCR fallback for scanned legacy manuals. Needs the tesseract and poppler
+# system packages (installed in the Dockerfile).
+pytesseract
+pdf2image
+pillow
+
+# Embeddings — EmbeddingGemma-300M on CPU.
+sentence-transformers
+torch

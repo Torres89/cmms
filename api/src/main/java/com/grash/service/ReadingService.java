@@ -24,15 +24,22 @@ public class ReadingService {
     private final ReadingMapper readingMapper;
     private final LicenseService licenseService;
     private MeterService meterService;
+    private ComponentService componentService;
 
     @Autowired
-    public void setDeps(@Lazy MeterService meterService
+    public void setDeps(@Lazy MeterService meterService, @Lazy ComponentService componentService
     ) {
         this.meterService = meterService;
+        this.componentService = componentService;
     }
 
-    public Reading create(Reading Reading) {
-        return readingRepository.save(Reading);
+    public Reading create(Reading reading) {
+        Reading saved = readingRepository.save(reading);
+        // Every reading advances the counters of whatever serialized components
+        // are installed at or under this meter's asset. Without this, remaining
+        // life on a spindle cartridge is a number nobody maintains.
+        componentService.applyReading(saved);
+        return saved;
     }
 
     public Reading update(Long id, ReadingPatchDTO reading) {

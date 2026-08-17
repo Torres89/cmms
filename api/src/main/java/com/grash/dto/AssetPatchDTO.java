@@ -1,7 +1,9 @@
 package com.grash.dto;
 
 import com.grash.model.*;
+import com.grash.model.enums.AssetLevel;
 import com.grash.model.enums.AssetStatus;
+import com.grash.model.enums.TrackingClass;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -78,4 +80,20 @@ public class AssetPatchDTO {
     private String description;
 
     private Date inServiceDate;
+
+    private AssetLevel level;
+
+    private String positionCode;
+
+    private String functionalDescription;
+
+    private Integer criticality;
+
+    private Double downtimeCostPerHour;
+
+    private Double replacementCost;
+
+    private TrackingClass trackingClass;
+
+    private String equipmentClass;
 }

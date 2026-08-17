@@ -19,7 +19,8 @@ function SettingsLayout() {
     { value: 'roles', label: t('roles') },
     { value: 'checklists', label: t('checklists') },
     { value: 'workflows', label: t('workflows') },
-    { value: 'ui-configuration', label: t('ui_configuration') }
+    { value: 'ui-configuration', label: t('ui_configuration') },
+    { value: 'ai', label: t('ai') }
   ];
   
   // Determine the current tab index based on the URL path

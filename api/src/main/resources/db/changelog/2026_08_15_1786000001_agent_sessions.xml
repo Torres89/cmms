@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Phase 0 - persisted agent state.
+
+      These tables are written by the Python agent service (cmms-agent), not by
+      Hibernate, so they carry no JPA entity. They replace the in-process session
+      dict and give every AI interaction an audit trail and a usage record.
+    -->
+
+    <changeSet id="1786000001-1" author="machine-specialist-platform">
+        <createTable tableName="chat_session">
+            <column name="id" type="varchar(64)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="asset_id" type="bigint"/>
+            <column name="title" type="varchar(255)"/>
+            <column name="channel" type="varchar(32)" defaultValue="WEB"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="chat_session" indexName="idx_chat_session_company_user">
+            <column name="company_id"/>
+            <column name="user_id"/>
+            <column name="updated_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1786000001-2" author="machine-specialist-platform">
+        <createTable tableName="chat_message">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="session_id" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="seq" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="varchar(24)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="text"/>
+            <column name="tool_calls" type="text"/>
+            <column name="tool_call_id" type="varchar(128)"/>
+            <column name="name" type="varchar(128)"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="chat_message" baseColumnNames="session_id"
+                                 constraintName="fk_chat_message_session"
+                                 referencedTableName="chat_session" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="chat_message" indexName="idx_chat_message_session_seq">
+            <column name="session_id"/>
+            <column name="seq"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1786000001-3" author="machine-specialist-platform">
+        <createTable tableName="chat_action_log">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint"/>
+            <column name="session_id" type="varchar(64)"/>
+            <column name="client" type="varchar(64)"/>
+            <column name="tool_name" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mutating" type="boolean" defaultValueBoolean="false"/>
+            <column name="arguments" type="text"/>
+            <column name="result" type="text"/>
+            <column name="succeeded" type="boolean"/>
+            <column name="latency_ms" type="int"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="chat_action_log" indexName="idx_chat_action_log_company_created">
+            <column name="company_id"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1786000001-4" author="machine-specialist-platform">
+        <createTable tableName="llm_usage">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint"/>
+            <column name="session_id" type="varchar(64)"/>
+            <column name="door" type="varchar(24)"/>
+            <column name="provider" type="varchar(64)"/>
+            <column name="model" type="varchar(128)"/>
+            <column name="prompt_tokens" type="int" defaultValueNumeric="0"/>
+            <column name="completion_tokens" type="int" defaultValueNumeric="0"/>
+            <column name="tool_calls" type="int" defaultValueNumeric="0"/>
+            <column name="latency_ms" type="int"/>
+            <column name="succeeded" type="boolean"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="llm_usage" indexName="idx_llm_usage_company_created">
+            <column name="company_id"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Door 1: OAuth 2.1 clients registered dynamically against the MCP server. -->
+    <changeSet id="1786000001-5" author="machine-specialist-platform">
+        <createTable tableName="mcp_oauth_client">
+            <column name="client_id" type="varchar(64)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="client_name" type="varchar(255)"/>
+            <column name="redirect_uris" type="text"/>
+            <column name="metadata" type="text"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

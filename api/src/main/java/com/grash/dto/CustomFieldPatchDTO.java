@@ -6,8 +6,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class CustomFieldPatchDTO {
-    
+
     private String name;
 
     private String value;
+
+    private String fieldGroup;
+
+    private Integer displayOrder;
 }

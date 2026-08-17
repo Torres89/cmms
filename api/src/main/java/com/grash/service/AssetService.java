@@ -1,5 +1,6 @@
 package com.grash.service;
 
+import com.grash.advancedsearch.FilterField;
 import com.grash.advancedsearch.SearchCriteria;
 import com.grash.advancedsearch.SpecificationBuilder;
 import com.grash.dto.AssetPatchDTO;
@@ -9,6 +10,7 @@ import com.grash.dto.license.LicenseEntitlement;
 import com.grash.exception.CustomException;
 import com.grash.mapper.AssetMapper;
 import com.grash.model.*;
+import com.grash.model.enums.AssetLevel;
 import com.grash.model.enums.AssetStatus;
 import com.grash.model.enums.NotificationType;
 import com.grash.repository.AssetRepository;
@@ -137,6 +139,14 @@ public class AssetService {
     }
 
     public List<Asset> findByCompanyAndParentAssetNull(Long id, Pageable pageable) {
+        // Paging an unsorted query leaves the order to the database, which in
+        // practice means a row moves to the end of the set the moment it is
+        // updated. On the asset hierarchy that reads as machines shuffling
+        // around, and any machine past the page size disappears outright.
+        if (pageable.getSort().isUnsorted()) {
+            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                    Sort.by(Sort.Direction.ASC, "name"));
+        }
         return assetRepository.findByCompany_IdAndParentAssetIsNull(id, pageable);
     }
 
@@ -146,6 +156,12 @@ public class AssetService {
     }
 
     public List<Asset> findAssetChildren(Long id, Sort sort) {
+        // Sub-assemblies carry a position code from their pack, and reading an
+        // equipment breakdown structure only works if it comes back in the same
+        // order every time.
+        if (sort == null || sort.isUnsorted()) {
+            sort = Sort.by(Sort.Order.asc("positionCode").nullsLast(), Sort.Order.asc("name"));
+        }
         return assetRepository.findByParentAsset_Id(id, sort);
     }
 
@@ -239,11 +255,49 @@ public class AssetService {
     }
 
     public Page<AssetShowDTO> findBySearchCriteria(SearchCriteria searchCriteria) {
+        applyDefaultLevelFilter(searchCriteria);
         SpecificationBuilder<Asset> builder = new SpecificationBuilder<>();
         searchCriteria.getFilterFields().forEach(builder::with);
         Pageable page = PageRequest.of(searchCriteria.getPageNum(), searchCriteria.getPageSize(),
                 searchCriteria.getDirection(), searchCriteria.getSortField());
         return assetRepository.findAll(builder.build(), page).map(asset -> assetMapper.toShowDto(asset, this));
+    }
+
+    /**
+     * Asset lists show machines, not the inside of machines.
+     * <p>
+     * Modelling sub-assemblies as assets is what buys component-level work
+     * orders and history for free, but it also means instantiating a pack adds
+     * two dozen rows to a shop that owns eight machines. So searches default to
+     * the top three levels; a caller that explicitly filters on {@code level}
+     * gets exactly what it asked for, which is how the Structure tab and the
+     * commissioning tooling reach the rest.
+     */
+    private void applyDefaultLevelFilter(SearchCriteria searchCriteria) {
+        boolean callerFiltersLevel = searchCriteria.getFilterFields().stream()
+                .anyMatch(field -> "level".equals(field.getField()));
+        if (callerFiltersLevel) {
+            return;
+        }
+        searchCriteria.getFilterFields().add(FilterField.builder()
+                .field("level")
+                .operation("in")
+                .value("")
+                .values(Arrays.asList(
+                        AssetLevel.SITE, AssetLevel.SYSTEM, AssetLevel.EQUIPMENT))
+                // An asset with no level must never vanish from the list. Rows
+                // predating this column, or written by a client that knows
+                // nothing about it, have to keep showing up — a filter that
+                // silently hides a customer's assets is far worse than one that
+                // shows a sub-assembly it could have hidden.
+                .alternatives(Collections.singletonList(FilterField.builder()
+                        .field("level")
+                        .operation("nu")
+                        .value("")
+                        .values(new ArrayList<>())
+                        .alternatives(new ArrayList<>())
+                        .build()))
+                .build());
     }
 
     public List<Asset> findByNameIgnoreCaseAndCompany(String assetName, Long companyId) {

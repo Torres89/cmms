@@ -18,4 +18,7 @@ public class AssetMiniDTO {
 
     private Long locationId;
 
+    /** Position within the parent, e.g. "SPN" — stable across component swaps. */
+    private String positionCode;
+
 }

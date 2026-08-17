@@ -134,6 +134,35 @@ public class Part extends CompanyAudit {
 
     private String unit;
 
+    // ------------------------------------------------------------------
+    // Part identity and sourcing
+    //
+    // A name and a cost is not an identity. The manufacturer part number is
+    // what makes a part findable, cross-referenceable and orderable.
+    // ------------------------------------------------------------------
+
+    private String manufacturer;
+
+    /** The real identity of the part. */
+    private String mpn;
+
+    private String preferredSupplierSku;
+
+    private Double leadTimeDaysTypical;
+
+    /** 1..5 — how badly it hurts when this part is the one you don't have. */
+    private Integer criticality;
+
+    private Integer shelfLifeDays;
+
+    private String storageConditions;
+
+    /** Whether we recommend keeping this on the shelf at all. */
+    private boolean stockRecommended;
+
+    /** Usage rate x lead time, with a safety margin. */
+    private Double reorderPoint;
+
     @JsonIgnore
     public Collection<OwnUser> getUsers() {
         Collection<OwnUser> users = new ArrayList<>();

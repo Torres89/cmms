@@ -60,6 +60,12 @@ public class WebSecurityConfig {
                 .requestMatchers("/mail/send").permitAll()
                 .requestMatchers("/subscription-plans").permitAll()
                 .requestMatchers("/files/download/tos", "/files/download/privacy-policy").permitAll()
+                // Signed, expiring links on the LOCAL storage tier carry their own
+                // authorization in the HMAC — see LocalFileController.
+                .requestMatchers(HttpMethod.GET, "/files/local").permitAll()
+                // The agent and other internal services authenticate with a shared
+                // service token, checked inside the controller.
+                .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/newsLetters").permitAll()
                 .requestMatchers("/auth/activate-account**").permitAll()

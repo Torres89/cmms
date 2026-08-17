@@ -1462,6 +1462,26 @@ const locale = {
   no_results_found: 'No results found',
   no_sub_assets: 'No sub-assets',
   no_assets_available: 'No assets available',
-  you_need_a_license: 'You need a license to access this feature'
+  you_need_a_license: 'You need a license to access this feature',
+  could_not_load_dossier: 'Could not load this machine\'s dossier.',
+  showing_last_known_state: 'Offline — showing last known state',
+  ask: 'Ask',
+  log_reading: 'Log reading',
+  report_problem: 'Report problem',
+  start_work: 'Start work',
+  criticality: 'Criticality',
+  maintenance_due: 'Maintenance due',
+  due: 'Due',
+  components_near_limit: 'Components near their limit',
+  key_specs: 'Key specs',
+  unverified_value: 'not yet verified',
+  recent_failures: 'Recent failures',
+  assistant: 'Assistant',
+  ask_me_about_this_machine: 'Ask me anything about {{name}} — its specs, manuals, parts, components or history.',
+  ask_a_question: 'Ask a question',
+  talking_about: 'Talking about',
+  assistant_not_configured: 'AI is not set up for your company yet. Ask your administrator to configure it in Settings.',
+  assistant_unreachable: 'Could not reach the assistant.',
+  no_response: 'No response.'
 };
 export default locale;

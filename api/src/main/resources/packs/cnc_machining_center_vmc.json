@@ -1,0 +1,338 @@
+{
+  "key": "CNC_MACHINING_CENTER_VMC",
+  "version": "1.0.0",
+  "label": {
+    "en": "CNC Vertical Machining Center",
+    "es": "Centro de mecanizado vertical CNC"
+  },
+  "description": "Vertical machining center. The failure content is grounded in what actually breaks these machines: lubrication is the single most critical maintenance task, contaminated coolant and poor lubrication are the leading causes of premature bearing and ballscrew failure, and a majority of spindle shutdowns trace to lubrication that was missed or not recorded. A spindle rebuild is $5k-$50k and 1-4 weeks of downtime.",
+
+  "ebs": [
+    {
+      "positionCode": "SPN", "level": "SUBUNIT", "name": "Spindle assembly",
+      "nameEs": "Conjunto del husillo", "critical": true, "criticality": 5,
+      "functionalDescription": "Rotates the tool. The most expensive single failure on the machine.",
+      "children": [
+        {
+          "positionCode": "SPN-CART", "level": "COMPONENT", "name": "Spindle cartridge",
+          "nameEs": "Cartucho del husillo", "trackingClass": "LIFE_LIMITED",
+          "hourLimit": 12000, "criticality": 5
+        },
+        {
+          "positionCode": "SPN-DRAW", "level": "COMPONENT", "name": "Drawbar / clamping unit",
+          "nameEs": "Barra de tiro / unidad de amarre", "criticality": 4
+        },
+        {
+          "positionCode": "SPN-MOTOR", "level": "COMPONENT", "name": "Spindle motor & drive",
+          "nameEs": "Motor y variador del husillo", "criticality": 4
+        }
+      ]
+    },
+    {
+      "positionCode": "AX-X", "level": "SUBUNIT", "name": "X axis", "nameEs": "Eje X", "criticality": 4,
+      "children": [
+        { "positionCode": "AX-X-BS", "level": "COMPONENT", "name": "X ballscrew",
+          "nameEs": "Husillo de bolas X", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "AX-X-WAY", "level": "COMPONENT", "name": "X linear guides / ways",
+          "nameEs": "Guías lineales X" },
+        { "positionCode": "AX-X-MOTOR", "level": "COMPONENT", "name": "X servo motor",
+          "nameEs": "Servomotor X" }
+      ]
+    },
+    {
+      "positionCode": "AX-Y", "level": "SUBUNIT", "name": "Y axis", "nameEs": "Eje Y", "criticality": 4,
+      "children": [
+        { "positionCode": "AX-Y-BS", "level": "COMPONENT", "name": "Y ballscrew",
+          "nameEs": "Husillo de bolas Y", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "AX-Y-WAY", "level": "COMPONENT", "name": "Y linear guides / ways",
+          "nameEs": "Guías lineales Y" },
+        { "positionCode": "AX-Y-MOTOR", "level": "COMPONENT", "name": "Y servo motor",
+          "nameEs": "Servomotor Y" }
+      ]
+    },
+    {
+      "positionCode": "AX-Z", "level": "SUBUNIT", "name": "Z axis", "nameEs": "Eje Z", "criticality": 4,
+      "children": [
+        { "positionCode": "AX-Z-BS", "level": "COMPONENT", "name": "Z ballscrew",
+          "nameEs": "Husillo de bolas Z", "trackingClass": "SERIALIZED", "criticality": 4 },
+        { "positionCode": "AX-Z-WAY", "level": "COMPONENT", "name": "Z linear guides / ways",
+          "nameEs": "Guías lineales Z" },
+        { "positionCode": "AX-Z-BRAKE", "level": "COMPONENT", "name": "Z brake / counterbalance",
+          "nameEs": "Freno / contrapeso Z", "criticality": 5 }
+      ]
+    },
+    { "positionCode": "COOL", "level": "SUBUNIT", "name": "Coolant system",
+      "nameEs": "Sistema de refrigerante", "criticality": 3,
+      "functionalDescription": "Contaminated coolant is a leading cause of premature bearing failure." },
+    { "positionCode": "LUBE", "level": "SUBUNIT", "name": "Way lubrication system",
+      "nameEs": "Sistema de lubricación de guías", "critical": true, "criticality": 5,
+      "functionalDescription": "The single most critical maintenance system on the machine. Verify FLOW at each point, not just reservoir level." },
+    { "positionCode": "ATC", "level": "SUBUNIT", "name": "Tool changer",
+      "nameEs": "Cambiador de herramientas", "criticality": 3 },
+    { "positionCode": "HYD", "level": "SUBUNIT", "name": "Hydraulics / counterbalance",
+      "nameEs": "Hidráulica / contrapeso", "criticality": 3 },
+    { "positionCode": "PNEU", "level": "SUBUNIT", "name": "Pneumatics / air prep",
+      "nameEs": "Neumática / preparación de aire", "criticality": 3 },
+    { "positionCode": "ELEC", "level": "SUBUNIT", "name": "Electrical cabinet & drives",
+      "nameEs": "Armario eléctrico y variadores", "criticality": 4 },
+    { "positionCode": "CHIP", "level": "SUBUNIT", "name": "Chip conveyor",
+      "nameEs": "Transportador de virutas", "criticality": 2 },
+    { "positionCode": "ENCL", "level": "SUBUNIT", "name": "Enclosure, way covers, doors",
+      "nameEs": "Carcasa, cubiertas de guías, puertas", "criticality": 3 }
+  ],
+
+  "specKeys": [
+    { "group": "Spindle", "key": "max_spindle_rpm", "labelEn": "Max spindle speed",
+      "labelEs": "Velocidad máxima del husillo", "unit": "rpm", "type": "NUM", "required": true, "order": 10 },
+    { "group": "Spindle", "key": "spindle_taper", "labelEn": "Spindle taper",
+      "labelEs": "Cono del husillo", "type": "TEXT", "required": true, "order": 11 },
+    { "group": "Spindle", "key": "spindle_power", "labelEn": "Spindle power",
+      "labelEs": "Potencia del husillo", "unit": "kW", "type": "NUM", "order": 12 },
+    { "group": "Spindle", "key": "spindle_bearing_type", "labelEn": "Spindle bearing type",
+      "labelEs": "Tipo de rodamiento del husillo", "type": "TEXT", "order": 13 },
+
+    { "group": "Travels", "key": "travel_x", "labelEn": "X travel", "labelEs": "Recorrido X",
+      "unit": "mm", "type": "NUM", "required": true, "order": 20 },
+    { "group": "Travels", "key": "travel_y", "labelEn": "Y travel", "labelEs": "Recorrido Y",
+      "unit": "mm", "type": "NUM", "required": true, "order": 21 },
+    { "group": "Travels", "key": "travel_z", "labelEn": "Z travel", "labelEs": "Recorrido Z",
+      "unit": "mm", "type": "NUM", "required": true, "order": 22 },
+    { "group": "Travels", "key": "rapid_traverse", "labelEn": "Rapid traverse",
+      "labelEs": "Avance rápido", "unit": "m/min", "type": "NUM", "order": 23 },
+
+    { "group": "Table", "key": "table_size", "labelEn": "Table size", "labelEs": "Tamaño de la mesa",
+      "type": "TEXT", "order": 30 },
+    { "group": "Table", "key": "max_table_load", "labelEn": "Max table load",
+      "labelEs": "Carga máxima de la mesa", "unit": "kg", "type": "NUM", "order": 31 },
+
+    { "group": "Lubrication", "key": "way_lube_spec", "labelEn": "Way lube specification",
+      "labelEs": "Especificación de lubricante de guías", "type": "TEXT", "required": true, "order": 40 },
+    { "group": "Lubrication", "key": "way_lube_warning", "labelEn": "Way lube substitution warning",
+      "labelEs": "Advertencia de sustitución de lubricante", "type": "TEXT", "order": 45 },
+    { "group": "Lubrication", "key": "way_lube_rate", "labelEn": "Way lube consumption rate",
+      "labelEs": "Consumo de lubricante de guías", "unit": "L/1000h", "type": "NUM", "order": 41 },
+    { "group": "Lubrication", "key": "way_lube_reservoir", "labelEn": "Way lube reservoir capacity",
+      "labelEs": "Capacidad del depósito de lubricante", "unit": "L", "type": "NUM", "order": 42 },
+    { "group": "Lubrication", "key": "spindle_lube_type", "labelEn": "Spindle lubrication type",
+      "labelEs": "Tipo de lubricación del husillo", "type": "TEXT", "order": 43 },
+
+    { "group": "Coolant", "key": "coolant_capacity", "labelEn": "Coolant tank capacity",
+      "labelEs": "Capacidad del tanque de refrigerante", "unit": "L", "type": "NUM", "required": true, "order": 50 },
+    { "group": "Coolant", "key": "coolant_concentration", "labelEn": "Target coolant concentration",
+      "labelEs": "Concentración objetivo de refrigerante", "unit": "%", "type": "NUM", "required": true, "order": 51 },
+    { "group": "Coolant", "key": "coolant_product", "labelEn": "Coolant product",
+      "labelEs": "Producto refrigerante", "type": "TEXT", "order": 52 },
+
+    { "group": "Tool changer", "key": "atc_capacity", "labelEn": "Tool changer capacity",
+      "labelEs": "Capacidad del cambiador", "unit": "tools", "type": "NUM", "order": 60 },
+    { "group": "Tool changer", "key": "max_tool_weight", "labelEn": "Max tool weight",
+      "labelEs": "Peso máximo de herramienta", "unit": "kg", "type": "NUM", "order": 61 },
+
+    { "group": "Control", "key": "control_type", "labelEn": "Control", "labelEs": "Control",
+      "type": "TEXT", "required": true, "order": 70 },
+    { "group": "Control", "key": "control_software_version", "labelEn": "Control software version",
+      "labelEs": "Versión de software del control", "type": "TEXT", "order": 71 },
+
+    { "group": "Utilities", "key": "electrical_supply", "labelEn": "Electrical supply",
+      "labelEs": "Alimentación eléctrica", "type": "TEXT", "required": true, "order": 80 },
+    { "group": "Utilities", "key": "air_requirement", "labelEn": "Air requirement",
+      "labelEs": "Requisito de aire", "unit": "bar", "type": "NUM", "required": true, "order": 81 },
+    { "group": "Utilities", "key": "machine_weight", "labelEn": "Machine weight",
+      "labelEs": "Peso de la máquina", "unit": "kg", "type": "NUM", "order": 82 },
+
+    { "group": "Accuracy", "key": "positioning_accuracy", "labelEn": "Positioning accuracy",
+      "labelEs": "Precisión de posicionamiento", "unit": "mm", "type": "NUM", "order": 90 },
+    { "group": "Accuracy", "key": "repeatability", "labelEn": "Repeatability",
+      "labelEs": "Repetibilidad", "unit": "mm", "type": "NUM", "order": 91 }
+  ],
+
+  "meters": [
+    { "name": "Spindle hours",
+      "usageBasis": true, "nameEs": "Horas de husillo", "unit": "h",
+      "updateFrequency": 7, "sourceType": "MTCONNECT", "dataItem": "SpindleRunTime" },
+    { "name": "Power-on hours", "nameEs": "Horas de encendido", "unit": "h",
+      "updateFrequency": 7, "sourceType": "MTCONNECT", "dataItem": "PowerOnTime" },
+    { "name": "Cycle count",
+      "usageBasis": true, "nameEs": "Conteo de ciclos", "unit": "cycles",
+      "updateFrequency": 7, "sourceType": "MTCONNECT", "dataItem": "PartCount" }
+  ],
+
+  "pmTemplates": [
+    {
+      "title": "Daily operator check",
+      "titleEs": "Comprobación diaria del operador",
+      "priority": "MEDIUM",
+      "triggerMode": "WHICHEVER_FIRST",
+      "intervals": [{ "basis": "CALENDAR", "value": 1, "unit": "days" }],
+      "tasks": [
+        "Coolant level and concentration (refractometer, not by eye)",
+        "Way lube reservoir level",
+        "Air pressure and drain the water separator",
+        "Chip conveyor and pan clear",
+        "Visual: leaks, damaged way covers",
+        "Listen: abnormal spindle noise"
+      ],
+      "tasksEs": [
+        "Nivel y concentración de refrigerante (refractómetro, no a ojo)",
+        "Nivel del depósito de lubricante de guías",
+        "Presión de aire y purgar el separador de agua",
+        "Transportador y bandeja de virutas despejados",
+        "Visual: fugas, cubiertas de guías dañadas",
+        "Escuchar: ruido anormal del husillo"
+      ]
+    },
+    {
+      "title": "500-hour service",
+      "titleEs": "Servicio de 500 horas",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "description": "Manufacturer charts are written as 'every 500 hours or 3 months'. Both counters run; whichever reaches 100% first fires the plan.",
+      "intervals": [
+        { "basis": "METER", "meter": "Spindle hours", "value": 500, "unit": "h", "warnAtPercent": 90 },
+        { "basis": "CALENDAR", "value": 3, "unit": "months", "warnAtPercent": 90 }
+      ],
+      "tasks": [
+        "Verify way lube FLOW at each point, not just reservoir level — checking the reservoir is the standard mistake and it is how spindles die",
+        "Clean the coolant tank and replace the coolant filter",
+        "Inspect and clean the chip auger",
+        "Check drawbar clamping force",
+        "Grease the tool changer per the manufacturer's chart",
+        "Inspect way wipers for damage and contamination bypass",
+        "Check and record backlash on each axis"
+      ],
+      "tasksEs": [
+        "Verificar el FLUJO de lubricante en cada punto, no solo el nivel del depósito",
+        "Limpiar el tanque de refrigerante y reemplazar el filtro",
+        "Inspeccionar y limpiar el sinfín de virutas",
+        "Comprobar la fuerza de amarre de la barra de tiro",
+        "Engrasar el cambiador de herramientas según la tabla del fabricante",
+        "Inspeccionar los limpiadores de guías",
+        "Comprobar y registrar el juego en cada eje"
+      ]
+    },
+    {
+      "title": "Annual precision & safety",
+      "titleEs": "Precisión y seguridad anual",
+      "priority": "HIGH",
+      "triggerMode": "WHICHEVER_FIRST",
+      "intervals": [{ "basis": "CALENDAR", "value": 12, "unit": "months", "warnAtPercent": 85 }],
+      "tasks": [
+        "Ballbar test — record the result, it is the trend that matters",
+        "Spindle runout and thermal growth",
+        "Backlash compensation check and adjustment",
+        "Door interlock and E-stop verification",
+        "Electrical cabinet clean and filter replacement",
+        "Coolant system full drain, clean and recharge",
+        "Verify machine level"
+      ],
+      "tasksEs": [
+        "Prueba de barra de bolas — registrar el resultado, lo que importa es la tendencia",
+        "Excentricidad del husillo y crecimiento térmico",
+        "Comprobación y ajuste de compensación de juego",
+        "Verificación de enclavamiento de puertas y parada de emergencia",
+        "Limpieza del armario eléctrico y cambio de filtro",
+        "Vaciado, limpieza y recarga completa del sistema de refrigerante",
+        "Verificar la nivelación de la máquina"
+      ]
+    }
+  ],
+
+  "failureModes": [
+    {
+      "code": "SPN-BRG-SEIZE", "subunit": "Spindle", "nameEn": "Spindle bearing seizure",
+      "nameEs": "Agarrotamiento del rodamiento del husillo",
+      "typicalMechanism": "Fatigue spalling / lubrication starvation",
+      "typicalCauses": "Lube failure; coolant ingress past the seal; crash overload",
+      "detectionMethods": "Vibration RMS; temperature rise; audible change; surface finish degradation",
+      "severityDefault": 5
+    },
+    {
+      "code": "SPN-ACC-LOSS", "subunit": "Spindle", "nameEn": "Loss of accuracy / poor surface finish",
+      "nameEs": "Pérdida de precisión / mal acabado superficial",
+      "typicalMechanism": "Bearing preload loss; thermal growth; runout",
+      "typicalCauses": "Bearing wear; crash; thermal cycling without warm-up",
+      "detectionMethods": "Test cut; runout indicator; ballbar",
+      "severityDefault": 4
+    },
+    {
+      "code": "SPN-DRAW-FORCE", "subunit": "Spindle", "nameEn": "Drawbar clamping force low",
+      "nameEs": "Fuerza de amarre baja en la barra de tiro",
+      "typicalCauses": "Belleville washer fatigue; contamination; wear",
+      "detectionMethods": "Drawbar force gauge; tool pull-out during heavy cuts",
+      "severityDefault": 4
+    },
+    {
+      "code": "AX-BS-BACKLASH", "subunit": "Axis", "nameEn": "Ballscrew backlash / wear",
+      "nameEs": "Juego / desgaste del husillo de bolas",
+      "typicalMechanism": "Ball and raceway wear",
+      "typicalCauses": "Inadequate lubrication; contamination past the wipers",
+      "detectionMethods": "Indicator reversal test; ballbar; circular interpolation error",
+      "severityDefault": 4
+    },
+    {
+      "code": "AX-WAY-WEAR", "subunit": "Axis", "nameEn": "Way / linear guide wear",
+      "nameEs": "Desgaste de guías lineales",
+      "typicalCauses": "Lube starvation; chip ingress past damaged wipers",
+      "detectionMethods": "Straightness check; visible scoring; increased servo load",
+      "severityDefault": 4
+    },
+    {
+      "code": "LUBE-NOFLOW", "subunit": "Lubrication", "nameEn": "Way lube not reaching a point",
+      "nameEs": "El lubricante no llega a un punto de engrase",
+      "typicalMechanism": "Blocked metering unit or crushed line",
+      "typicalCauses": "Blocked metering unit; crushed line; pump failure; wrong viscosity oil",
+      "detectionMethods": "Verify flow at each point during a lube cycle — reservoir level tells you nothing about whether oil arrived",
+      "severityDefault": 5
+    },
+    {
+      "code": "COOL-CONC", "subunit": "Coolant", "nameEn": "Coolant concentration out of spec",
+      "nameEs": "Concentración de refrigerante fuera de especificación",
+      "typicalCauses": "Water top-up without concentrate; evaporation; tramp oil",
+      "detectionMethods": "Refractometer",
+      "severityDefault": 2
+    },
+    {
+      "code": "COOL-PUMP-FAIL", "subunit": "Coolant", "nameEn": "Coolant pump failure",
+      "nameEs": "Fallo de la bomba de refrigerante",
+      "typicalCauses": "Chip ingress; seal wear; running dry",
+      "detectionMethods": "No flow at nozzle; pump noise; alarm",
+      "severityDefault": 3
+    },
+    {
+      "code": "ATC-MISFEED", "subunit": "Tool changer", "nameEn": "Tool change fault / dropped tool",
+      "nameEs": "Fallo de cambio de herramienta / herramienta caída",
+      "typicalCauses": "Gripper wear; misalignment; air pressure low; debris in the taper",
+      "detectionMethods": "Alarm during change; visual; audible",
+      "severityDefault": 3
+    },
+    {
+      "code": "ELEC-DRIVE-FAULT", "subunit": "Electrical", "nameEn": "Servo or drive fault",
+      "nameEs": "Fallo de servo o variador",
+      "typicalCauses": "Overheating from a clogged cabinet filter; encoder contamination; supply issues",
+      "detectionMethods": "Control alarm; cabinet temperature; drive diagnostics",
+      "severityDefault": 4
+    },
+    {
+      "code": "CHIP-JAM", "subunit": "Chip conveyor", "nameEn": "Chip conveyor jam",
+      "nameEs": "Atasco del transportador de virutas",
+      "typicalCauses": "Long stringy chips; overload; worn drive",
+      "detectionMethods": "Overload trip; visible backup in the pan",
+      "severityDefault": 2
+    }
+  ],
+
+  "consumables": [
+    { "name": "Way lube oil", "nameEs": "Aceite de lubricación de guías",
+      "positionCode": "LUBE", "unit": "L", "replaceIntervalHours": 1000 },
+    { "name": "Coolant filter", "nameEs": "Filtro de refrigerante",
+      "positionCode": "COOL", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalHours": 500 },
+    { "name": "Air filter element", "nameEs": "Elemento de filtro de aire",
+      "positionCode": "PNEU", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalMonths": 6 },
+    { "name": "Cabinet filter mat", "nameEs": "Filtro del armario eléctrico",
+      "positionCode": "ELEC", "unit": "ea", "qtyPerAssembly": 1, "replaceIntervalMonths": 6 },
+    { "name": "Way wiper set", "nameEs": "Juego de limpiadores de guías",
+      "positionCode": "ENCL", "unit": "set", "qtyPerAssembly": 1, "replaceIntervalMonths": 24 },
+    { "name": "Coolant concentrate", "nameEs": "Concentrado de refrigerante",
+      "positionCode": "COOL", "unit": "L", "replaceIntervalMonths": 12 }
+  ]
+}

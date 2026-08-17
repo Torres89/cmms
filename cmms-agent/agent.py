@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import asyncio
+import getpass
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -14,6 +15,7 @@ from openai import OpenAI
 load_dotenv()
 
 from tool_registry import get_all_tools, get_all_functions
+from api_client import APIClient, set_client
 import browser
 
 MODEL = os.getenv("MODEL", "minimax.minimax-m2")
@@ -55,6 +57,20 @@ search for it first to resolve the ID.
 """
 
 
+def sign_in():
+    """
+    The CLI signs in as a real user — there is no service account.
+
+    Everything the agent does is then executed as that user and inherits the
+    API's org isolation and role checks.
+    """
+    email = os.getenv("CMMS_EMAIL") or input("Atlas email: ").strip()
+    password = os.getenv("CMMS_PASSWORD") or getpass.getpass("Atlas password: ")
+    api_client = APIClient.login(email, password)
+    set_client(api_client)
+    return email
+
+
 def run_agent_loop():
     tools = get_all_tools()
     functions = get_all_functions()
@@ -62,6 +78,13 @@ def run_agent_loop():
 
     print("\n" + "=" * 60)
     print("  Atlas CMMS Agent")
+    print("=" * 60)
+    try:
+        email = sign_in()
+    except Exception as exc:
+        print(f"\n  [error] Sign-in failed: {exc}\n")
+        return
+    print(f"  Signed in as {email}.")
     print("  Type natural language commands to manage your CMMS.")
     print("  Type 'exit' or 'quit' to stop.")
     print("=" * 60 + "\n")

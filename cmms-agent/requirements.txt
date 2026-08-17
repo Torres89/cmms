@@ -4,3 +4,6 @@ python-dotenv
 playwright
 fastapi
 uvicorn[standard]
+psycopg[binary]
+psycopg_pool
+python-multipart

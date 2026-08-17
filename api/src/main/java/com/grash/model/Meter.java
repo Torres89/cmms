@@ -35,6 +35,17 @@ public class Meter extends CompanyAudit {
 
     private boolean isDemo;
 
+    /**
+     * Whether this is the meter that measures how hard the machine has been
+     * worked, as opposed to one that merely happens to be counted in hours.
+     * <p>
+     * A machine normally carries several: spindle hours, power-on hours, idle
+     * hours. Only one of them is what a component's life is spent against, and
+     * crediting a component from all of them at once inflates its wear by
+     * whatever the others happen to read.
+     */
+    private boolean usageBasis;
+
     @ManyToMany
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @JoinTable(name = "T_Meter_User_Associations",

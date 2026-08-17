@@ -16,5 +16,10 @@ COPY --from=build /app/target/*.jar my-spring-boot-app.jar
 # Expose the port that the Spring Boot application will run on
 EXPOSE 8080
 
+# Cap the heap. Without this the JVM takes 25% of host RAM whether it needs it
+# or not, which on a shared multi-tenant box is memory taken from everything
+# else. Override with JAVA_OPTS at runtime if a deployment needs more.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=50 -XX:InitialRAMPercentage=25"
+
 # Specify the command to run on container startup
-CMD ["java", "--add-opens=java.base/java.lang=ALL-UNNAMED", "-jar", "/app/my-spring-boot-app.jar"]
+CMD ["sh", "-c", "exec java $JAVA_OPTS --add-opens=java.base/java.lang=ALL-UNNAMED -jar /app/my-spring-boot-app.jar"]

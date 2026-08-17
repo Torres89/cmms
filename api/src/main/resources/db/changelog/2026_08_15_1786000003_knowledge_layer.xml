@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Phase 2 - the knowledge layer.
+
+      Retrieval lives in the Postgres we already run: no vector database to
+      operate, back up, or explain to a customer. A ten-machine shop is
+      realistically 5k-50k chunks, which pgvector handles without noticing.
+
+      document_chunk deliberately has no JPA entity. Hibernate has no native
+      mapping for the vector type and ddl-auto=validate would fight it; the
+      hybrid search is a native query either way.
+    -->
+
+    <changeSet id="1786000003-1" author="machine-specialist-platform">
+        <preConditions onFail="MARK_RAN" onFailMessage="pgvector is not installed on this server">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM pg_available_extensions WHERE name = 'vector'
+            </sqlCheck>
+        </preConditions>
+        <sql>CREATE EXTENSION IF NOT EXISTS vector;</sql>
+    </changeSet>
+
+    <changeSet id="1786000003-2" author="machine-specialist-platform">
+        <preConditions onFail="MARK_RAN" onFailMessage="pgvector extension missing; skipping document_chunk">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'
+            </sqlCheck>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            CREATE TABLE IF NOT EXISTS document_chunk (
+              id              BIGSERIAL PRIMARY KEY,
+              document_id     BIGINT NOT NULL REFERENCES document(id) ON DELETE CASCADE,
+              -- Tenant isolation, enforced in every query. There is never a
+              -- shared corpus across customers.
+              company_id      BIGINT NOT NULL,
+              asset_id        BIGINT,
+              equipment_class VARCHAR(64),
+              page_from       INT,
+              page_to         INT,
+              section         TEXT,
+              content         TEXT NOT NULL,
+              -- 'simple', not 'english': stemming would mangle alarm codes and
+              -- part numbers, and simple keeps Spanish working in the same column.
+              content_tsv     TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', content)) STORED,
+              embedding       VECTOR(768),
+              token_count     INT,
+              embedding_model VARCHAR(64),
+              created_at      TIMESTAMPTZ DEFAULT now()
+            );
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="1786000003-3" author="machine-specialist-platform">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="document_chunk"/>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            CREATE INDEX IF NOT EXISTS idx_document_chunk_embedding
+              ON document_chunk USING hnsw (embedding vector_cosine_ops);
+            CREATE INDEX IF NOT EXISTS idx_document_chunk_tsv
+              ON document_chunk USING gin (content_tsv);
+            CREATE INDEX IF NOT EXISTS idx_document_chunk_scope
+              ON document_chunk (company_id, asset_id);
+            CREATE INDEX IF NOT EXISTS idx_document_chunk_class
+              ON document_chunk (company_id, equipment_class);
+            CREATE INDEX IF NOT EXISTS idx_document_chunk_document
+              ON document_chunk (document_id);
+        ]]></sql>
+    </changeSet>
+
+    <!--
+      The ingest queue. A Postgres table with SELECT ... FOR UPDATE SKIP LOCKED
+      rather than Redis: ingestion is bursty and slow, nobody is waiting on it,
+      and a queue is not worth another container on a shared box.
+    -->
+    <changeSet id="1786000003-4" author="machine-specialist-platform">
+        <createTable tableName="ingest_job">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="document_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(24)" defaultValue="QUEUED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts" type="int" defaultValueNumeric="0"/>
+            <column name="last_error" type="text"/>
+            <column name="priority" type="int" defaultValueNumeric="100"/>
+            <column name="locked_at" type="timestamp with time zone"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="ingest_job" baseColumnNames="document_id"
+                                 constraintName="fk_ingest_job_document"
+                                 referencedTableName="document" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="ingest_job" indexName="idx_ingest_job_queue">
+            <column name="status"/>
+            <column name="priority"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!--
+      Door 2 and Door 3: which model a company uses, and whose key pays for it.
+      The key is stored encrypted and is never returned by a user-facing API.
+    -->
+    <changeSet id="1786000003-5" author="machine-specialist-platform">
+        <addColumn tableName="company_settings">
+            <column name="ai_provider" type="varchar(32)" defaultValue="NONE"/>
+            <column name="ai_api_key_encrypted" type="varchar(2000)"/>
+            <column name="ai_model" type="varchar(128)"/>
+            <column name="ai_base_url" type="varchar(500)"/>
+            <column name="ai_monthly_token_cap" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <!--
+      Fault codes. Telematics payloads generally carry the code but not its
+      meaning, so this starts from public J1939 data and gets enriched from the
+      customer's own manuals during ingestion.
+    -->
+    <changeSet id="1786000003-6" author="machine-specialist-platform">
+        <createTable tableName="fault_code_dictionary">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint"/>
+            <column name="equipment_class" type="varchar(64)"/>
+            <column name="manufacturer" type="varchar(128)"/>
+            <column name="code" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description_en" type="text"/>
+            <column name="description_es" type="text"/>
+            <column name="severity" type="varchar(32)"/>
+            <column name="likely_causes" type="text"/>
+            <column name="recommended_action" type="text"/>
+            <column name="source" type="varchar(64)"/>
+            <column name="document_id" type="bigint"/>
+            <column name="page" type="int"/>
+        </createTable>
+        <createIndex tableName="fault_code_dictionary" indexName="idx_fault_code_lookup">
+            <column name="code"/>
+            <column name="equipment_class"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

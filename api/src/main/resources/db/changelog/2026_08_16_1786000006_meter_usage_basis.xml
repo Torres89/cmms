@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Which meter a component's life is actually spent against.
+
+      A machine carries several meters counted in hours - spindle hours,
+      power-on hours, idle hours - and only one of them measures the work the
+      installed parts are doing. Without this flag every hours meter credits
+      every installed component, so a spindle with 2,900 real hours reads 3,970
+      because power-on hours were added on top.
+    -->
+
+    <changeSet id="1786000006-1" author="machine-specialist-platform">
+        <addColumn tableName="meter">
+            <column name="usage_basis" type="boolean" defaultValueBoolean="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="1786000006-2" author="machine-specialist-platform">
+        <sql>UPDATE meter SET usage_basis = false WHERE usage_basis IS NULL</sql>
+        <addNotNullConstraint tableName="meter" columnName="usage_basis"
+                              columnDataType="boolean" defaultNullValue="false"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -37,6 +37,14 @@ public class MinioService implements StorageService {
     @Value("${storage.minio.public-endpoint}")
     private String minioPublicEndpoint;
 
+    @Value("${storage.inline-max-bytes:33554432}")
+    private long inlineMaxBytes;
+
+    @Override
+    public long maxInMemoryDownloadBytes() {
+        return inlineMaxBytes;
+    }
+
     private MinioClient minioClient;
     private static boolean configured = false;
 
@@ -108,8 +116,20 @@ public class MinioService implements StorageService {
         }
     }
 
+    public long size(String filePath) {
+        checkIfConfigured();
+        try {
+            return minioClient.statObject(
+                    StatObjectArgs.builder().bucket(minioBucket).object(filePath).build()
+            ).size();
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
     public byte[] download(String filePath) {
         checkIfConfigured();
+        assertSafeToBuffer(filePath);
         InputStream inputStream = null;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {

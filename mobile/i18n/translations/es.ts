@@ -1492,7 +1492,27 @@ const locale = {
   top_level: 'Nivel superior',
   no_results_found: 'No se encontraron resultados',
   no_sub_assets: 'Sin subactivos',
-  no_assets_available: 'No hay activos disponibles'
+  no_assets_available: 'No hay activos disponibles',
+  could_not_load_dossier: 'No se pudo cargar el expediente de esta máquina.',
+  showing_last_known_state: 'Sin conexión — mostrando el último estado conocido',
+  ask: 'Preguntar',
+  log_reading: 'Registrar lectura',
+  report_problem: 'Reportar problema',
+  start_work: 'Iniciar trabajo',
+  criticality: 'Criticidad',
+  maintenance_due: 'Mantenimiento pendiente',
+  due: 'Vencido',
+  components_near_limit: 'Componentes cerca de su límite',
+  key_specs: 'Especificaciones clave',
+  unverified_value: 'sin verificar todavía',
+  recent_failures: 'Fallos recientes',
+  assistant: 'Asistente',
+  ask_me_about_this_machine: 'Pregúnteme lo que quiera sobre {{name}} — especificaciones, manuales, piezas, componentes o historial.',
+  ask_a_question: 'Haga una pregunta',
+  talking_about: 'Hablando de',
+  assistant_not_configured: 'La IA aún no está configurada para su empresa. Pídale al administrador que la configure en Ajustes.',
+  assistant_unreachable: 'No se pudo contactar al asistente.',
+  no_response: 'Sin respuesta.'
 };
 
 export default locale;

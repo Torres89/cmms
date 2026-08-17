@@ -12,6 +12,7 @@ import { GitHub, LinkedIn, Mail, Phone, Sms } from '@mui/icons-material';
 import { getFeaturesLinks, getIndustriesLinks } from '../../utils/urlPaths';
 import { useTranslation } from 'react-i18next';
 import { ReactNode } from 'react';
+import { sourceCodeUrl } from 'src/config';
 
 const FooterWrapper = styled(Box)(
   ({ theme }) => `
@@ -134,7 +135,8 @@ export function Footer() {
       items: [
         { href: '/pricing', text: t('pricing') },
         { href: '/privacy', text: 'Privacy Policy' },
-        { href: '/terms-of-service', text: 'Terms of Service' }
+        { href: '/terms-of-service', text: 'Terms of Service' },
+        { href: sourceCodeUrl, text: 'Source code (AGPLv3)' }
       ]
     },
     {
@@ -265,7 +267,27 @@ export function Footer() {
         </Grid>
         <Box mt={4} textAlign="center">
           <Typography variant="body2">
-            © {new Date().getFullYear()} Atlas CMMS. All rights reserved.
+            © {new Date().getFullYear()} Atlas CMMS.
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5 }}>
+            Licensed under the{' '}
+            <FooterLink
+              href="https://www.gnu.org/licenses/agpl-3.0.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GNU AGPLv3
+            </FooterLink>
+            . The complete corresponding source, including our modifications, is
+            available at{' '}
+            <FooterLink
+              href={sourceCodeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {sourceCodeUrl}
+            </FooterLink>
+            .
           </Typography>
         </Box>
       </Container>
