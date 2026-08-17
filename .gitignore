@@ -20,3 +20,21 @@ keypair/
 
 # Local Claude Code skills (project-specific, not shared)
 .claude/
+
+# Internal documentation
+lessons_learned/
+
+# Reverse proxy config (contains hostnames/secrets; never publish)
+Caddyfile
+
+# Python virtualenvs and bytecode. These were tracked by mistake: the cmms-agent
+# venv is 204 MB of Windows-only .pyd/.exe files that the Linux images rebuild
+# from requirements.txt anyway, and every .pyc showed up as a spurious diff.
+venv/
+**/venv/
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo

@@ -1,0 +1,17 @@
+# The image installs from requirements.txt; a local venv in the build context is
+# 204 MB of Windows-only .pyd/.exe that would be copied in and never used.
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Never bake credentials into a published image.
+.env
+.env.*
+!.env.example
+
+.git
+.gitignore
+.browser-data/
+*.log

@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Never bake credentials into a published image.
+.env
+.env.*
+!.env.example
+
+.git
+.gitignore
+*.log
