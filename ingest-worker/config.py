@@ -68,6 +68,9 @@ LOCAL_PATH = os.getenv("STORAGE_LOCAL_PATH", "/data/files")
 # --- embedding -------------------------------------------------------------
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "google/embeddinggemma-300m")
+# EmbeddingGemma is gated on HuggingFace. Empty means anonymous, which works
+# only for ungated models.
+HF_TOKEN = os.getenv("HF_TOKEN", "").strip()
 # Must match the VECTOR(n) column in document_chunk. EmbeddingGemma is
 # Matryoshka-truncatable to 512/256/128 if a deployment ever needs it smaller,
 # but the column dimension has to change with it.

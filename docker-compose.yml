@@ -154,6 +154,9 @@ services:
     container_name: atlas-cmms-ingest
     environment:
       - WORKER_ROLE=${WORKER_ROLE:-both}
+      # EmbeddingGemma is a gated HuggingFace repo. Without a token that has
+      # accepted its licence the model 401s and retrieval is lexical-only.
+      - HF_TOKEN=${HF_TOKEN:-}
       - DB_URL=postgres:5432/atlas
       - DB_USER=${POSTGRES_USER}
       - DB_PWD=${POSTGRES_PWD}

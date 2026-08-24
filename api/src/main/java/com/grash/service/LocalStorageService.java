@@ -49,6 +49,13 @@ public class LocalStorageService implements StorageService {
     private String apiHost;
     @Value("${storage.local.signing-key:}")
     private String signingKeyValue;
+    /**
+     * Read as a plain string rather than the enum: this bean is constructed on
+     * every deployment, including ones whose storage type is something else
+     * entirely, and a misspelt value must not fail the context here.
+     */
+    @Value("${storage.type:}")
+    private String storageTypeValue;
 
     @Value("${storage.inline-max-bytes:33554432}")
     private long inlineMaxBytes;
@@ -77,6 +84,17 @@ public class LocalStorageService implements StorageService {
         }
         String key = (signingKeyValue == null || signingKeyValue.isEmpty()) ? null : signingKeyValue;
         if (key == null) {
+            // Only fatal when this backend is the one actually in use. The
+            // base path above defaults to a real directory in docker-compose,
+            // so without this check every deployment on minio/s3/gcp dies here
+            // unless it sets a signing key for a backend it never touches.
+            // checkIfConfigured() still refuses individual requests, so a
+            // genuinely misconfigured LOCAL install fails loudly at the call.
+            if (!"LOCAL".equalsIgnoreCase(storageTypeValue)) {
+                log.info("Local storage has a base path but no signing key; leaving it unconfigured "
+                        + "because STORAGE_TYPE={}", storageTypeValue);
+                return;
+            }
             throw new CustomException(
                     "STORAGE_LOCAL_SIGNING_KEY must be set when STORAGE_TYPE=local",
                     HttpStatus.INTERNAL_SERVER_ERROR);

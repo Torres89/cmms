@@ -574,6 +574,38 @@ The new packages are private and `GHCR_PAT` is missing, expired, or lacks
 `read:packages`. Fix the secret and re-run the workflow, or make the packages
 public at <https://github.com/Torres89?tab=packages>.
 
+**The API exits with `STORAGE_LOCAL_SIGNING_KEY must be set when
+STORAGE_TYPE=local` — on a deployment that does not use local storage**
+Hit on the first deploy of this release. `docker-compose.yml` defaults
+`STORAGE_LOCAL_PATH` to `/data/files`, which is non-empty, so
+`LocalStorageService.init()` skipped its early return and demanded a signing
+key. Compose then passed `STORAGE_LOCAL_SIGNING_KEY` as *defined but empty*,
+and `application.yml`'s `${STORAGE_LOCAL_SIGNING_KEY:${JWT_SECRET_KEY:}}`
+fallback only fires when a property is absent, never when it is present and
+empty. The context failed and the API died, after Liquibase had already
+migrated successfully.
+
+Fixed in the code: the signing key is now only fatal when `STORAGE_TYPE=local`.
+On a box still running the old image, set any non-empty value and recreate:
+
+```bash
+echo "STORAGE_LOCAL_SIGNING_KEY=$(openssl rand -hex 32)" >> .env
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d api
+```
+
+**`embeddingsAvailable: false` on the ingest worker's `/health`**
+`google/embeddinggemma-300m` is a gated HuggingFace repo and the download
+returns 401 without a token. Retrieval still works, but lexically only — no
+vector half, which is most of the point of pgvector. Accept the licence at
+<https://huggingface.co/google/embeddinggemma-300m>, create a token, then:
+
+```bash
+echo "HF_TOKEN=hf_xxxxxxxx" >> .env
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d ingest-worker
+docker logs -f atlas-cmms-ingest      # first load downloads ~1.2 GB of weights
+curl -s http://127.0.0.1:8002/health  # embeddingsAvailable should turn true
+```
+
 **Deploy fails at `git merge --ff-only`**
 The checkout on the box has local commits or a dirty tracked file. This is the
 guard doing its job — it refuses rather than discarding your changes. SSH in,

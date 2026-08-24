@@ -39,12 +39,27 @@ def model():
             from sentence_transformers import SentenceTransformer
 
             log.info("Loading %s (CPU)", config.EMBEDDING_MODEL)
-            _model = SentenceTransformer(config.EMBEDDING_MODEL, device="cpu")
+            # EmbeddingGemma is a gated repo: without a token that has accepted
+            # its licence the download returns 401 and retrieval quietly drops
+            # to lexical-only. Passed explicitly rather than left to the
+            # HF_TOKEN environment variable, so an empty value is not mistaken
+            # for a real one.
+            _model = SentenceTransformer(
+                config.EMBEDDING_MODEL, device="cpu", token=config.HF_TOKEN or None
+            )
         except Exception as exc:
             # Retrieval degrades to lexical-only rather than the whole service
             # failing. A shop with BM25 search over its manuals is still far
             # better off than a shop with a stack trace.
-            log.error("Could not load the embedding model (%s); retrieval will be lexical-only", exc)
+            if not config.HF_TOKEN and "401" in str(exc):
+                log.error(
+                    "Could not load %s: it is a gated model and HF_TOKEN is not set. "
+                    "Accept the licence at https://huggingface.co/%s, create a token, "
+                    "and set HF_TOKEN. Retrieval will be lexical-only until then.",
+                    config.EMBEDDING_MODEL, config.EMBEDDING_MODEL,
+                )
+            else:
+                log.error("Could not load the embedding model (%s); retrieval will be lexical-only", exc)
             _load_failed = True
     return _model
 
