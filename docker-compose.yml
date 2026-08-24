@@ -173,7 +173,12 @@ services:
       - model_cache:/models
       - file_data:/data/files
     ports:
-      - "8002:8002"
+      # Loopback only. /embed and /ocr take no credentials, and the only caller
+      # is the API over the compose network (EMBEDDING_URL=http://ingest-worker:8002),
+      # so publishing this on 0.0.0.0 would put unauthenticated OCR and embedding
+      # on the public interface. Compose merges `ports` across files rather than
+      # replacing them, so this has to be right here, not overridden in prod.
+      - "127.0.0.1:8002:8002"
     depends_on:
       - postgres
 

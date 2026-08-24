@@ -81,8 +81,22 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          # Without this the script runs to completion even after a command
+          # fails, and the job reports a green deploy that never happened.
+          script_stop: true
           script: |
+            set -euo pipefail
             cd ~/atlas-cmms
+
+            # The compose files are part of the release: services, images and env
+            # wiring all change between deploys. Pulling images without syncing
+            # them starts the new images under the old topology, which fails
+            # silently — new services simply never appear. ff-only so that a box
+            # with local commits stops the deploy instead of losing them.
+            git fetch --quiet origin main
+            git checkout --quiet main
+            git merge --ff-only --quiet origin/main
+
             # GH_USER_OR_ORG must be lowercase (Docker/GHCR requirement)
             export GH_USER_OR_ORG=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
             # Login to GHCR for private packages (add GHCR_PAT secret with read:packages scope; skip if public)
