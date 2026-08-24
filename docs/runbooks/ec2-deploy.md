@@ -8,9 +8,13 @@ new services.
 Work through the phases in order. Phases 0-2 are preparation and can be done
 any time beforehand with the site up. Phase 3 is the maintenance window.
 
-**Expect the site to be down for the length of phase 3** — a database dump and
-restore, so it scales with how much data you have. For a demo-sized database
-budget 15-20 minutes; add time if the instance has to pull ~3 GB of new images.
+**Expect the site to be down from the start of phase 3 until phase 4 finishes.**
+The dump and restore itself is quick — this instance's database measured 15 MB,
+which dumps and restores in seconds. What actually sets the window is the CI
+build in phase 4 (the ingest-worker image carries Docling and CPU torch, so
+10-20 minutes) plus the ~3 GB image pull on the box afterwards. Budget 30-45
+minutes end to end, and note that most of it is spent waiting on GitHub rather
+than on anything you can hurry.
 
 Conventions used below: the instance user is `ubuntu`, the checkout is
 `~/atlas-cmms`, the GHCR namespace is `torres89`, and the compose project is
@@ -364,13 +368,28 @@ ls -lh ~/atlas-pre-pgvector-$STAMP.sql.gz     # not a few hundred bytes
 zcat ~/atlas-pre-pgvector-$STAMP.sql.gz | tail -5   # ends cleanly, no error text
 ```
 
-Get a copy off the instance. This is your only way back:
+Get a copy off the instance. This is your only way back.
+
+The instance has no AWS CLI installed, so pull it down over SSH instead —
+run this **from your own machine**, not from the box:
 
 ```bash
-aws s3 cp ~/atlas-pre-pgvector-$STAMP.sql.gz s3://YOUR-BUCKET/postgres/
+scp -i ~/Documents/Maint/keypair/atlas-prod-key.pem \
+  ubuntu@98.83.54.9:'~/atlas-pre-pgvector-*.sql.gz' .
 ```
 
-**Do not continue until that upload has succeeded.**
+Check it arrived intact before going on:
+
+```bash
+ls -lh atlas-pre-pgvector-*.sql.gz
+gzip -t atlas-pre-pgvector-*.sql.gz && echo "archive is valid"
+```
+
+**Do not continue until that copy exists on your machine and passes `gzip -t`.**
+If you would rather keep it in S3 as well, install the CLI on the box
+(`sudo snap install aws-cli --classic`) and upload from there — but the local
+copy is the one that matters, because it does not share a failure domain with
+the instance.
 
 ### 3.4 Drop the old data directory
 

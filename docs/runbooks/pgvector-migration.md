@@ -57,13 +57,16 @@ ls -lh ~/atlas-pre-pgvector-$STAMP.sql.gz     # sanity: not a few hundred bytes
 zcat ~/atlas-pre-pgvector-$STAMP.sql.gz | tail -5   # should end cleanly
 ```
 
-Get it off the instance before touching the volume:
+Get it off the instance before touching the volume. There is no AWS CLI on the
+box, so copy it down over SSH — **from your own machine**:
 
 ```bash
-aws s3 cp ~/atlas-pre-pgvector-$STAMP.sql.gz s3://YOUR-BUCKET/postgres/
+scp -i ~/Documents/Maint/keypair/atlas-prod-key.pem \
+  ubuntu@98.83.54.9:'~/atlas-pre-pgvector-*.sql.gz' .
+gzip -t atlas-pre-pgvector-*.sql.gz && echo "archive is valid"
 ```
 
-Do not continue until that upload has succeeded.
+Do not continue until that copy exists off the instance and passes `gzip -t`.
 
 ## 3. Drop the old data directory
 
