@@ -41,3 +41,6 @@ __pycache__/
 
 # Reverse proxy config - lives only on the box, never committed
 Caddyfile
+
+# Timestamped .env backups taken during deploys - full of live secrets
+.env.backup*
