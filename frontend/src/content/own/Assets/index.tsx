@@ -749,7 +749,10 @@ function Assets() {
               <CustomDataGrid
                 columns={columns}
                 rows={assets.content}
-
+                // Required by paginationMode="server": without it the grid
+                // takes the loaded row count as the total, decides there is
+                // one page, and disables the next-page control.
+                rowCount={assets.totalElements}
                 getRowHeight={() => 'auto'}
                 disableColumnFilter
                 loading={loadingGet}
