@@ -16,6 +16,22 @@ Conventions used below: the instance user is `ubuntu`, the checkout is
 `~/atlas-cmms`, the GHCR namespace is `torres89`, and the compose project is
 `atlas-cmms` (so the database volume is `atlas-cmms_postgres_data`).
 
+The instance takes a key, so every SSH command in this guide is:
+
+```bash
+ssh -i ~/Documents/Maint/keypair/atlas-prod-key.pem ubuntu@98.83.54.9
+```
+
+On Windows the key path is `C:\Users\alfre\Documents\Maint\keypair\atlas-prod-key.pem`.
+`keypair/` is gitignored (`.gitignore:19`), so the `.pem` itself is never
+committed — only this path to it is. To run a single command without an
+interactive session, append it in quotes:
+
+```bash
+ssh -i ~/Documents/Maint/keypair/atlas-prod-key.pem ubuntu@98.83.54.9 \
+  'cd ~/atlas-cmms && git status --porcelain'
+```
+
 ---
 
 ## What this release changes
@@ -25,7 +41,7 @@ Conventions used below: the instance user is `ubuntu`, the checkout is
 | Postgres moves to `pgvector/pgvector:pg16` | musl to glibc. Same major version, so it mounts and starts happily while every text index is left sorted under the wrong collation. Phase 3 exists entirely for this. |
 | Two new services: `ingest-worker`, `telemetry-collector` | New GHCR packages, which are created **private** by default. Phase 0. |
 | New env wiring (`MCP_PUBLIC_URL`, `AGENT_URL`, …) | Interpolated without defaults, so a missing value is blank rather than sensible. Phase 2. |
-| The deploy now syncs the checkout on the box | Requires `~/atlas-cmms` to be a clean checkout on `main`. Phase 1. |
+| The deploy now syncs the checkout on the box | Requires `~/atlas-cmms` to be a clean checkout on `main`. On this instance it was a hand-assembled directory with no `.git`, so it has to be converted first. Phase 1.1 and 1.5. |
 
 ---
 
@@ -62,7 +78,7 @@ At `https://github.com/Torres89/cmms/settings/secrets/actions` you should see
 SSH in:
 
 ```bash
-ssh ubuntu@<EC2_HOST>
+ssh -i ~/Documents/Maint/keypair/atlas-prod-key.pem ubuntu@98.83.54.9
 cd ~/atlas-cmms
 ```
 
@@ -90,8 +106,13 @@ git checkout -- <file>             # discard it
 Untracked files are fine and are left alone. `.env` and `Caddyfile` are
 gitignored, so nothing below will touch them.
 
-If `~/atlas-cmms` turns out **not** to be a git checkout at all, stop and say
-so — the deploy step needs one and we would take a different approach.
+If `~/atlas-cmms` turns out **not** to be a git checkout at all — every `git`
+command answers `fatal: not a git repository` — then it was assembled by hand
+from copied files, which is how this instance was originally built. The deploy
+cannot work against it: `git fetch` is the first command in the deploy script
+and `script_stop: true` aborts the job there. Fix it with
+[1.5 Converting a hand-assembled directory](#15-converting-a-hand-assembled-directory-into-a-checkout)
+before going any further.
 
 ### 1.2 Disk and memory
 
@@ -134,6 +155,64 @@ sudo ss -tlnp | grep -E '5432|8080|8001|9000'
 
 The ingest worker is already bound to `127.0.0.1` in this release, so it is not
 exposed regardless.
+
+### 1.5 Converting a hand-assembled directory into a checkout
+
+Only needed if 1.1 showed no git repository. This restarts nothing — a checkout
+does not touch running containers — so it is still a no-downtime step.
+
+The directory holds a mix of things that are in the repo (`docker-compose.yml`,
+`docker-compose.prod.yml`) and things that are deliberately not (`.env`,
+`Caddyfile`, `cmms-agent/.env`, `logo/`). The three latter are gitignored, so a
+checkout leaves them exactly where they are. The compose files **will** be
+overwritten by the repo's versions — which is the point, since they are part of
+the release — so diff them first and rescue any local edits.
+
+```bash
+cd ~
+tar czf ~/atlas-cmms-preconvert-$(date +%F-%H%M).tar.gz atlas-cmms
+ls -lh ~/atlas-cmms-preconvert-*.tar.gz     # your way back
+```
+
+Turn it into a real checkout. `-f` is required because the compose files exist
+as untracked files that the checkout needs to replace:
+
+```bash
+cd ~/atlas-cmms
+git init -q
+git remote add origin https://github.com/Torres89/cmms.git
+git fetch origin                            # full history: --ff-only needs it later
+git checkout -f -b main --track origin/main
+```
+
+Verify it looks like what the deploy expects:
+
+```bash
+git rev-parse --abbrev-ref HEAD    # main
+git status --porcelain             # empty
+ls .env Caddyfile cmms-agent/.env  # all three still present
+```
+
+**Rescuing the local compose edits.** On this instance
+`docker-compose.prod.yml` had been edited to hardcode admin bootstrap values:
+
+```yaml
+  api:
+    environment:
+      - ADMIN_EMAIL=admin@test.com
+      - ADMIN_PASSWORD=Admin1234
+      - ADMIN_COMPANY_NAME=TestCo
+```
+
+That was a workaround for a stale `docker-compose.yml` predating the
+`ADMIN_*` lines. The repo's `docker-compose.yml` already passes
+`ADMIN_EMAIL: ${ADMIN_EMAIL:-}` and friends through from `.env`, so the fix is
+to put the values in `.env` (phase 2) and drop the override. Do not re-apply
+the edit to the tracked file — a modified tracked file will block every future
+deploy at `--ff-only`.
+
+Anything else your diff turned up goes the same way: into `.env`, or upstream
+into the repo as a commit — never as a local edit on the box.
 
 ---
 
@@ -181,16 +260,25 @@ SECRET_ENCRYPTION_KEY=<paste the generated value>
 EMBEDDING_URL=http://ingest-worker:8002
 WORKER_ROLE=both
 
-# Remote MCP server. Must be the public HTTPS URL exactly as external clients
-# reach it — OAuth metadata is built from this, so a blank value leaves MCP
-# advertising an endpoint nobody can reach.
+# Remote MCP server. This is the BASE origin, with no /mcp on the end:
+# mcp_server.py appends the paths itself (`{MCP_PUBLIC_URL}/mcp` at line 126,
+# `/oauth/authorize` and friends at 137-140). Putting /mcp here yields
+# /mcp/mcp and an OAuth handshake no client can complete. A blank value leaves
+# MCP advertising an endpoint nobody can reach.
 MCP_ENABLED=true
-MCP_PUBLIC_URL=https://cmms.example.com/mcp
+MCP_PUBLIC_URL=https://agent.cmms-demo.automationhr-ai.com
 
 # How the browser reaches the agent for in-app chat. Blank here is worse than
 # unset: docker-compose.prod.yml interpolates it with no default, overriding
 # the localhost value from the base compose file.
-AGENT_URL=https://cmms.example.com/agent
+AGENT_URL=https://agent.cmms-demo.automationhr-ai.com
+
+# Admin bootstrap. These moved out of a local docker-compose.prod.yml edit in
+# phase 1.5 — the base compose file passes them through from here. Inert once
+# the admin user exists in the database.
+ADMIN_EMAIL=admin@test.com
+ADMIN_PASSWORD=<pick something better than the old Admin1234>
+ADMIN_COMPANY_NAME=TestCo
 
 # AGPL section 13 — surfaced in the app footer.
 SOURCE_CODE_URL=https://github.com/Torres89/cmms
@@ -208,10 +296,24 @@ Caddyfile has no matching route they will resolve to 404s.
 grep -nE 'agent|mcp|8001' Caddyfile
 ```
 
-The agent listens on `8001` inside the compose network. If there is no route,
-add one before phase 3 — a reverse proxy to `agent:8001` under whatever paths
-you put in `MCP_PUBLIC_URL` and `AGENT_URL`. `Caddyfile` is gitignored and
-lives only on the box, so it is yours to edit directly.
+On this instance the route already exists and **nothing needs changing**:
+
+```caddy
+agent.cmms-demo.automationhr-ai.com {
+    reverse_proxy agent:8001
+}
+```
+
+Because that proxies the whole subdomain rather than one path, every endpoint
+the MCP server publishes is already covered — `/mcp`, `/oauth/authorize`,
+`/oauth/token`, `/oauth/register`, and the two `/.well-known/...` documents
+that clients fetch before authenticating. That is exactly why `MCP_PUBLIC_URL`
+is the bare origin.
+
+The agent listens on `8001` inside the compose network. If there were no route,
+you would add one before phase 3 — a reverse proxy to `agent:8001` on the host
+named in `MCP_PUBLIC_URL` and `AGENT_URL`. `Caddyfile` is gitignored and lives
+only on the box, so it is yours to edit directly.
 
 ---
 
@@ -495,9 +597,11 @@ phase 3 prefers dump-and-restore, which cannot end up in that state.
 ## Quick checklist
 
 - [ ] `GHCR_PAT` secret added with `read:packages`
-- [ ] `~/atlas-cmms` is a clean checkout on `main`
+- [ ] `~/atlas-cmms` is a clean checkout on `main` (converted per 1.5 if it was not one)
+- [ ] Local compose edits rescued into `.env`, tracked files unmodified
 - [ ] 5 GB+ free on `/`
 - [ ] `.env` backed up, new variables added
+- [ ] `MCP_PUBLIC_URL` is a bare origin with no `/mcp` suffix
 - [ ] Caddy routes exist for `AGENT_URL` and `MCP_PUBLIC_URL`
 - [ ] Dump taken **and copied off the instance**
 - [ ] Old volume removed, new Postgres up, `pg_available_extensions` shows `vector`

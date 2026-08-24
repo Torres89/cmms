@@ -12,7 +12,16 @@ Run this once, in a maintenance window, **before** merging
 `feat/machine-specialist-platform` to `main`. The deploy on merge does
 `pull && up -d`, which would otherwise perform the swap unsupervised.
 
-Everything below runs on the EC2 box, from `~/atlas-cmms`.
+Everything below runs on the EC2 box, from `~/atlas-cmms`:
+
+```bash
+ssh -i ~/Documents/Maint/keypair/atlas-prod-key.pem ubuntu@98.83.54.9
+cd ~/atlas-cmms
+```
+
+Step 4 assumes `~/atlas-cmms` is a git checkout. If it is not, convert it
+first — see
+[1.5 in the EC2 deploy guide](./ec2-deploy.md#15-converting-a-hand-assembled-directory-into-a-checkout).
 
 ## 0. Pre-flight
 
