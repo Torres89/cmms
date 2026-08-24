@@ -38,3 +38,6 @@ __pycache__/
 **/__pycache__/
 *.pyc
 *.pyo
+
+# Reverse proxy config - lives only on the box, never committed
+Caddyfile
