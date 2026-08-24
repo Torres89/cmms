@@ -645,6 +645,76 @@ phase 3 prefers dump-and-restore, which cannot end up in that state.
 
 ---
 
+## What the first run actually taught us
+
+This release went to production on 2026-08-24. It succeeded, but not on the
+first attempt at every phase. Recorded here because the surprises were all in
+places the plan did not look, and none of them were the Postgres migration —
+which was the only part everyone was nervous about and the part that went
+exactly to plan.
+
+**The migration itself was the easy bit.** 15 MB database, dump and restore in
+seconds, `ON_ERROR_STOP=1` reported zero errors, row counts matched to the row.
+The runbook's original 15-20 minute estimate was spent almost entirely on the
+CI build instead. Budget by image build time, not by data volume, until the
+database is large enough to change that.
+
+**The box had never been a git checkout.** `~/atlas-cmms` was a hand-assembled
+directory of scp'd files, so the new deploy step's `git fetch` would have
+aborted the job at its first command. Nothing in phases 0-2 would have caught
+this if 1.1 had not explicitly checked. See [1.5](#15-converting-a-hand-assembled-directory-into-a-checkout).
+Generalise it: **verify the deploy target matches what the deploy script
+assumes**, rather than what it assumed a year ago.
+
+**Two latent bugs only a real deploy could surface.** Both are in
+[Troubleshooting](#troubleshooting):
+
+- The API would not start on *any* deployment not using local storage, because
+  a compose default made a validation fire for a backend that was not in use,
+  and an empty-string environment variable defeated a Spring property default.
+  Liquibase had already migrated successfully by then, so the database was fine
+  and only the app was down — worth knowing, because it means the fix is a
+  restart, not a restore.
+- Embeddings silently did not work: EmbeddingGemma is a gated HuggingFace repo
+  and the 401 was handled by degrading to lexical-only. Nothing errored, health
+  was `ok`, and `embeddingsAvailable: false` was the only signal. **Check that
+  field explicitly; a green health check is not enough.**
+
+**`MCP_PUBLIC_URL` was documented wrong in this very runbook** — as the `/mcp`
+endpoint when the code appends that path itself. It would have produced
+`/mcp/mcp` and an OAuth handshake no client could complete. Verify config that
+is a *promise about a URL* by fetching the metadata, not by reading the value:
+
+```bash
+curl -s https://<agent-host>/.well-known/oauth-protected-resource/mcp
+```
+
+**The deploy is not finished when the commit appears on the box.** The deploy
+script syncs the checkout *before* it pulls and restarts. Polling for the new
+SHA reports success while the old containers are still running. Poll on
+container age or image ID instead.
+
+**Every push to `main` is a full release** — five image builds and a container
+recreate, about 9 minutes. Batch fixes rather than pushing them one at a time.
+
+**Secrets kept turning up untracked but not ignored.** `Caddyfile` and the
+`.env.backup-*` files this runbook tells you to create were both one `git add .`
+away from being committed. Both now have `.gitignore` rules. When a runbook
+tells someone to create a file full of secrets, add the ignore rule in the same
+change.
+
+**Unrelated bugs surface when data volume changes.** Seeding took the instance
+from 25 to 97 assets, which exposed that the assets grid never passed `rowCount`
+to a server-paginated MUI DataGrid — so it showed the first ten rows and
+disabled paging. It was the only list page in the app missing it. Deploys are
+also the moment previously-invisible bugs become visible.
+
+**`seed/client.py` defaults to the production API.** Running any seed or purge
+script with no environment variables set writes to the live site. Set
+`CMMS_API_URL` explicitly, always.
+
+---
+
 ## Quick checklist
 
 - [ ] `GHCR_PAT` secret added with `read:packages`
@@ -660,4 +730,9 @@ phase 3 prefers dump-and-restore, which cannot end up in that state.
 - [ ] Checkout returned to `main`, working tree clean
 - [ ] PR merged, both workflow jobs green
 - [ ] `document_chunk` exists and `pg_extension` lists `vector`
+- [ ] API logged `Started ApiApplication` — Liquibase succeeding is not the same
+      as the app starting
+- [ ] Ingest worker `/health` reports `embeddingsAvailable: true`, not just `ok`
+- [ ] MCP metadata fetched and the advertised `resource` ends in a single `/mcp`
+- [ ] Containers actually recreated (check their age, not the commit on the box)
 - [ ] Asset dossier loads in the browser
