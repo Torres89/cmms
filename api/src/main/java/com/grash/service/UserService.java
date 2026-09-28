@@ -178,7 +178,9 @@ public class UserService {
             }
             List<UserInvitation> userInvitations =
                     userInvitationService.findByRoleAndEmail(role.getId(), user.getEmail());
-            if (enableInvitationViaEmail && userInvitations.isEmpty()) {
+            // Checked whether or not invitations are emailed: role ids are sequential, so
+            // without this anyone could join any company by guessing one.
+            if (userInvitations.isEmpty()) {
                 throw new CustomException("You are not invited to this organization for this role",
                         HttpStatus.NOT_ACCEPTABLE);
             }
