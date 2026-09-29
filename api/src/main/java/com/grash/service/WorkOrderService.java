@@ -83,9 +83,7 @@ public class WorkOrderService {
             WorkOrderPostDTO workOrderPostDTO = (WorkOrderPostDTO) workOrder;
             workOrder = workOrderMapper.fromPostDto(workOrderPostDTO);
             if (workOrderPostDTO.getAsset() != null && workOrderPostDTO.getAssetStatus() != null) {
-                Asset asset = assetService.findById(workOrderPostDTO.getAsset().getId()).get();
-                asset.setStatus(workOrderPostDTO.getAssetStatus());
-                assetService.save(asset);
+                applyAssetStatus(workOrderPostDTO.getAsset().getId(), workOrderPostDTO.getAssetStatus(), company);
             }
         }
         workOrder.setCustomId(getWorkOrderNumber(company));
@@ -98,6 +96,35 @@ public class WorkOrderService {
         workflows.forEach(workflow -> workflowService.runWorkOrder(workflow, savedWorkOrder));
 
         return savedWorkOrder;
+    }
+
+    /**
+     * Put the asset into the status a new work order reports it in.
+     * <p>
+     * Goes through the same downtime path as changing the status on the asset
+     * itself: a breakdown work order that marks the machine DOWN has to open a
+     * downtime record, or MTBF and MTTR are computed from nothing. Completing
+     * the work order closes it again (see the change-status endpoint).
+     */
+    private void applyAssetStatus(Long assetId, AssetStatus newStatus, Company company) {
+        Asset asset = assetService.findById(assetId)
+                .orElseThrow(() -> new CustomException("Asset not found", HttpStatus.NOT_FOUND));
+        AssetStatus current = asset.getStatus();
+        boolean wasDown = current != null && current.isReallyDown();
+        Locale locale = Helper.getLocale(company);
+        if (newStatus.isReallyDown() && !wasDown) {
+            assetService.triggerDownTime(asset.getId(), locale, newStatus);
+        } else if (!newStatus.isReallyDown() && wasDown) {
+            assetService.stopDownTime(asset.getId(), locale);
+            if (newStatus != AssetStatus.OPERATIONAL) {
+                Asset stopped = assetService.findById(assetId).orElse(asset);
+                stopped.setStatus(newStatus);
+                assetService.save(stopped);
+            }
+        } else if (newStatus != current) {
+            asset.setStatus(newStatus);
+            assetService.save(asset);
+        }
     }
 
     public String getWorkOrderNumber(Company company) {
