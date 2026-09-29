@@ -6,6 +6,8 @@ export interface IFile {
   uri: string;
   name: string;
   type: string;
+  // The picked File, when the browser gave us one
+  file?: Blob;
 }
 
 export default interface File extends Audit {

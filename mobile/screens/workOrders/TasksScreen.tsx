@@ -10,7 +10,7 @@ import { RootStackScreenProps } from '../../types';
 import { addFiles } from '../../slices/file';
 import * as ImagePicker from 'expo-image-picker';
 import { formatImages } from '../../utils/overall';
-import ImageView from 'react-native-image-viewing';
+import ImageView from '../../components/ImageViewer';
 import { SheetManager } from 'react-native-actions-sheet';
 
 export default function TasksScreen({

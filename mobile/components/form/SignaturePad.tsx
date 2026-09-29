@@ -1,10 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import SignatureScreen, {
-  SignatureViewRef
-} from 'react-native-signature-canvas';
-import { Button, Text, useTheme } from 'react-native-paper';
-import { IHash } from '../../models/form';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import SignatureCanvas from 'react-signature-canvas';
+import { Button, Text } from 'react-native-paper';
 
 interface SignaturePadProps {
   label: string;
@@ -17,54 +14,45 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
   onChange,
   value
 }) => {
-  const ref = useRef<SignatureViewRef>();
-  const theme = useTheme();
+  const ref = useRef<SignatureCanvas>(null);
   const [hasChanged, setHasChanged] = useState(false);
+  const [width, setWidth] = useState(0);
 
-  const handleOK = (signature: string) => {
-    onChange(signature);
+  // The canvas needs pixel dimensions; size it to its container.
+  useEffect(() => {
+    if (value && ref.current && width) ref.current.fromDataURL(value);
+  }, [width]);
+
+  const saveSignature = () => {
+    // Same data URL shape react-native-signature-canvas produced
+    onChange(ref.current.getCanvas().toDataURL('image/png'));
     setHasChanged(false);
   };
 
-  const handleBegin = () => {
-    setHasChanged(true);
-  };
-
-  const saveSignature = () => {
-    ref.current.readSignature(); // This triggers onOK
-  };
-
   const handleClear = () => {
-    ref.current.clearSignature();
+    ref.current.clear();
     onChange('');
     setHasChanged(false);
   };
 
-  const style = `.m-signature-pad--footer .button {
-    background-color: ${theme.colors.primary};
-    color: ${theme.colors.onPrimary};
-  }
-   body, html {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    .m-signature-pad--body canvas {
-      width: 100%;
-      height: 100%;
-    }`;
-
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.signatureContainer}>
-        <SignatureScreen
-          ref={ref}
-          onOK={handleOK}
-          onBegin={handleBegin}
-          webStyle={style}
-          dataURL={value}
-        />
+      <View
+        style={styles.signatureContainer}
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      >
+        {!!width && (
+          <SignatureCanvas
+            ref={ref}
+            onBegin={() => setHasChanged(true)}
+            canvasProps={{
+              width,
+              height: 200,
+              style: { touchAction: 'none', display: 'block' }
+            }}
+          />
+        )}
       </View>
       <View style={styles.buttonContainer}>
         <Button mode="outlined" onPress={handleClear} style={styles.button}>
@@ -97,7 +85,8 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    backgroundColor: 'white'
   },
   buttonContainer: {
     flexDirection: 'row',

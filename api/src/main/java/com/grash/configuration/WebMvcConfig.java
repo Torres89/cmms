@@ -9,6 +9,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -20,6 +21,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final CurrentUserResolver currentUserResolver;
     @Value("${frontend.url}")
     private String frontendUrl;
+    @Value("${mobile.url:}")
+    private String mobileUrl;
     @Value("${security.cors.enabled}")
     private boolean enableCors;
 
@@ -27,11 +30,23 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         if (enableCors) {
             registry.addMapping("/**")
-                    .allowedOrigins(frontendUrl)
+                    .allowedOrigins(allowedOrigins(frontendUrl, mobileUrl))
                     .allowedMethods("HEAD", "OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE")
                     .allowCredentials(true)
                     .maxAge(MAX_AGE_SECS);
         } else registry.addMapping("/**").allowedMethods("*");
+    }
+
+    /**
+     * The web app, plus the mobile PWA when it is deployed. Trailing slashes
+     * are stripped because a browser's Origin header never has one.
+     */
+    static String[] allowedOrigins(String... urls) {
+        return Arrays.stream(urls)
+                .filter(url -> url != null && !url.isBlank())
+                .map(url -> url.trim().replaceAll("/+$", ""))
+                .distinct()
+                .toArray(String[]::new);
     }
 
     @Override

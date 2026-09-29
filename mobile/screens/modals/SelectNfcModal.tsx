@@ -1,21 +1,16 @@
-import { Alert, Platform, StyleSheet } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 import { View } from '../../components/Themed';
 import * as React from 'react';
 import { useEffect } from 'react';
 import { RootStackScreenProps } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Text } from 'react-native-paper';
+import { isNfcSupported, normaliseNfcSerial } from '../../utils/pwa';
 
-type NfcModule = typeof import('react-native-nfc-manager');
-
-const nfcModule: NfcModule | null =
-  Platform.OS === 'ios'
-    ? null
-    : (require('react-native-nfc-manager') as NfcModule);
-
-const NfcManager = nfcModule?.default;
-const NfcTech = nfcModule?.NfcTech;
-
+/**
+ * Web NFC (NDEFReader). Chrome on Android only, and only on HTTPS; the tag's
+ * serial number is what the native app used as the NFC id.
+ */
 export default function SelectNfcModal({
   navigation,
   route
@@ -23,51 +18,52 @@ export default function SelectNfcModal({
   const { onChange } = route.params;
   const { t } = useTranslation();
 
-  async function readNdef() {
-    try {
-      await NfcManager.requestTechnology(NfcTech.Ndef);
-      const tag = await NfcManager.getTag();
-      return tag?.id || null;
-    } catch (ex) {
-      console.warn('NFC Error:', ex);
-      throw ex;
-    } finally {
-      // Always clean up
-      NfcManager.cancelTechnologyRequest().catch(() => {});
-    }
-  }
-
   useEffect(() => {
-    if (!NfcManager || !NfcTech) {
-      navigation.goBack();
+    if (!isNfcSupported()) {
+      Alert.alert(
+        t('error'),
+        t(
+          'nfc_not_supported',
+          'This browser cannot read NFC tags. Use Chrome on Android, or scan a barcode instead.'
+        ),
+        [{ text: 'Ok', onPress: () => navigation.goBack() }]
+      );
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
+    let done = false;
+    // @ts-ignore - NDEFReader is not in the TypeScript DOM lib yet
+    const reader = new window.NDEFReader();
 
-    // Initialize NFC
-    NfcManager.start()
-      .then(() => readNdef())
-      .then((tagId) => {
-        if (cancelled) return;
-        if (tagId) {
-          onChange(tagId);
-        } else {
-          Alert.alert(t('error'), t('tag_not_found'), [
-            { text: 'Ok', onPress: () => navigation.goBack() }
-          ]);
-        }
-      })
-      .catch((error) => {
-        if (cancelled) return;
+    reader.onreading = (event: { serialNumber?: string }) => {
+      if (done) return;
+      done = true;
+      controller.abort();
+      const tagId = event.serialNumber
+        ? normaliseNfcSerial(event.serialNumber)
+        : null;
+      if (tagId) {
+        onChange(tagId);
+      } else {
+        Alert.alert(t('error'), t('tag_not_found'), [
+          { text: 'Ok', onPress: () => navigation.goBack() }
+        ]);
+      }
+    };
+
+    reader
+      .scan({ signal: controller.signal })
+      .catch((error: Error) => {
+        if (done || controller.signal.aborted) return;
         Alert.alert(t('error'), t(error.message), [
           { text: 'Ok', onPress: () => navigation.goBack() }
         ]);
       });
 
     return () => {
-      cancelled = true;
-      NfcManager?.cancelTechnologyRequest().catch(() => {});
+      done = true;
+      controller.abort();
     };
   }, []);
 
@@ -77,6 +73,9 @@ export default function SelectNfcModal({
         {t('scanning')}
       </Text>
       <ActivityIndicator size={'large'} />
+      <Text style={{ marginTop: 20, textAlign: 'center' }}>
+        {t('nfc_hold_tag', 'Hold the tag against the back of the phone')}
+      </Text>
     </View>
   );
 }
@@ -85,15 +84,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center'
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold'
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%'
+    justifyContent: 'center',
+    padding: 20
   }
 });

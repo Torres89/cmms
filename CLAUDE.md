@@ -25,7 +25,9 @@ Components:
 
 - **api/** - Spring Boot 3.2.3 (Java 17) REST backend on port 8080
 - **frontend/** - React 17 + TypeScript + Material-UI 5 web app on port 3000
-- **mobile/** - React Native (Expo 53) mobile app
+- **mobile/** - Installable mobile web app (PWA) for technicians, port 3002.
+  Written in React Native, shipped only as web (Expo 53 + react-native-web);
+  there is no native/store build.
 - **cmms-agent/** - Python 3.11 FastAPI AI agent + remote MCP server on port 8001
 - **ingest-worker/** - Python document pipeline: Docling parsing, OCR, chunking,
   EmbeddingGemma embeddings. Port 8002. CPU only.
@@ -37,7 +39,7 @@ Components:
 ### Full stack (Docker)
 
 ```bash
-docker compose up -d                       # postgres, api, frontend, agent, ingest-worker, minio
+docker compose up -d                       # postgres, api, frontend, mobile, agent, ingest-worker, minio
 docker compose --profile telemetry up -d   # ...plus the telemetry collector
 docker compose down
 ```
@@ -66,15 +68,20 @@ cd frontend && npm run lint:fix
 cd frontend && npm run format   # Prettier
 ```
 
-### Mobile (Expo)
+### Mobile (PWA)
 
 ```bash
 cd mobile && npm install
-cd mobile && npx expo start --dev-client   # Dev
-cd mobile && npx expo run:android
-cd mobile && npx expo run:ios
-cd mobile && npm test                      # Jest
+cd mobile && npm start          # Dev server in the browser
+cd mobile && npm run build      # Static site in dist/ (expo export -p web)
+cd mobile && npm test           # Jest (jest-expo/web)
 ```
+
+The PWA runs on its own origin, so the API and agent only accept it when
+`PUBLIC_MOBILE_URL` is set. Phones install it only over HTTPS. Native-only
+libraries do not work in it: check a package has web support before adding it.
+`Alert.alert` is routed to a Paper dialog (`components/AlertHost.tsx`) because
+react-native-web implements it as an empty function.
 
 ### Agent (Python)
 
@@ -193,6 +200,7 @@ Added by the machine-specialist work:
 | `MCP_PUBLIC_URL` | Public HTTPS URL of the MCP server, as clients reach it. |
 | `STORAGE_S3_*`, `STORAGE_LOCAL_*` | S3/R2 and filesystem storage backends. |
 | `SOURCE_CODE_URL` | Where the AGPL source is published (surfaced in the app footer). |
+| `PUBLIC_MOBILE_URL` | Public URL of the mobile PWA. Added to the API's CORS and websocket origins and to the agent's `AGENT_ALLOWED_ORIGINS`. |
 
 Each Python service has its own `.env.example`: `cmms-agent/`, `ingest-worker/`,
 `telemetry-collector/`.

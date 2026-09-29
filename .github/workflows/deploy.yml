@@ -38,6 +38,13 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.prefix }}-frontend:latest
           
+      - name: Build and push Mobile PWA
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mobile
+          push: true
+          tags: ${{ steps.image.outputs.prefix }}-mobile:latest
+
       - name: Build and push API
         uses: docker/build-push-action@v5
         with:

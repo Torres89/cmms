@@ -1482,6 +1482,16 @@ const locale = {
   talking_about: 'Talking about',
   assistant_not_configured: 'AI is not set up for your company yet. Ask your administrator to configure it in Settings.',
   assistant_unreachable: 'Could not reach the assistant.',
-  no_response: 'No response.'
+  no_response: 'No response.',
+  install_app_title: 'Install Atlas on this phone',
+  install_app_description: 'Opens full screen from your home screen, like an app.',
+  install_app_ios: 'Tap the Share button, then "Add to Home Screen".',
+  install: 'Install',
+  not_now: 'Not now',
+  nfc_not_supported: 'This browser cannot read NFC tags. Use Chrome on Android, or scan a barcode instead.',
+  nfc_hold_tag: 'Hold the tag against the back of the phone',
+  camera_not_supported: 'This browser cannot open the camera. It needs HTTPS and camera permission.',
+  point_camera_at_code: 'Point the camera at a barcode or QR code',
+  app_version: 'App version'
 };
 export default locale;

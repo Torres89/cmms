@@ -6,7 +6,8 @@ import { sameDay } from './dates';
 import { Priority, WorkOrderStatus } from '../models/workOrder';
 import { MD3Theme } from 'react-native-paper';
 import mime from 'mime';
-import ImagePicker from 'expo-image-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { IFile } from '../models/file';
 import { NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
 import { NativeScrollEvent } from 'react-native/Libraries/Components/ScrollView/ScrollView';
 
@@ -162,17 +163,22 @@ export function readFileAsync(file: Blob) {
   });
 }
 
-export function formatImages(
-  result: ImagePicker.ImagePickerResult
-): { uri: string; name: string; type: string }[] {
-  return result.assets.map((asset) => {
-    const fileName = asset.uri.split('/')[asset.uri.split('/').length - 1];
-    return {
-      uri: asset.uri,
-      name: fileName,
-      type: mime.getType(fileName)
-    };
-  });
+export function formatImages(result: ImagePicker.ImagePickerResult): IFile[] {
+  return result.assets.map(assetToFile);
+}
+
+// On the web the picker's uri is a data: URL, so the name has to come from
+// the picked File rather than the end of the path.
+export function assetToFile(asset: ImagePicker.ImagePickerAsset): IFile {
+  const fileName =
+    asset.fileName ??
+    `image-${Date.now()}.${mime.getExtension(asset.mimeType ?? '') ?? 'jpg'}`;
+  return {
+    uri: asset.uri,
+    name: fileName,
+    type: asset.mimeType ?? mime.getType(fileName),
+    file: asset.file
+  };
 }
 
 export const isCloseToBottom = ({

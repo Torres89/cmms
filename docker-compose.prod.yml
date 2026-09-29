@@ -14,6 +14,7 @@ services:
       - caddy_config:/config
     depends_on:
       - frontend
+      - mobile
       - api
       - agent
       - minio
@@ -31,6 +32,13 @@ services:
     image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-frontend:latest
     restart: unless-stopped
     environment:
+      AGENT_URL: ${AGENT_URL}
+
+  mobile:
+    image: ghcr.io/${GH_USER_OR_ORG}/atlas-cmms-mobile:latest
+    restart: unless-stopped
+    environment:
+      API_URL: ${PUBLIC_API_URL}
       AGENT_URL: ${AGENT_URL}
 
   agent:

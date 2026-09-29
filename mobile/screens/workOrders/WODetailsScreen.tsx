@@ -2,8 +2,6 @@ import {
   Alert,
   Image,
   Linking,
-  PermissionsAndroid,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -60,7 +58,6 @@ import PartQuantities from '../../components/PartQuantities';
 import { SheetManager } from 'react-native-actions-sheet';
 import LoadingDialog from '../../components/LoadingDialog';
 import WorkOrder from '../../models/workOrder';
-import * as FileSystem from 'expo-file-system';
 import Labor from '../../models/labor';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { Task } from '../../models/tasks';
@@ -285,31 +282,6 @@ export default function WODetailsScreen({
     };
   }, [primaryTime, runningTimer]); // Run effect whenever runningTimer changes
 
-  const actualDownload = async (uri: string): Promise<void> => {
-    const rawFileName = workOrder?.title ?? `work-order-${id}`;
-    const fileName = rawFileName.replace(/[\\/:*?"<>|]/g, '_');
-    const directoryUri =
-      FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
-    if (!directoryUri) {
-      throw new Error('Missing download directory path');
-    }
-    const fileUri = `${directoryUri}${fileName}.pdf`;
-    const res = await FileSystem.downloadAsync(uri, fileUri);
-
-    if (res && res.status === 200) {
-      try {
-        await Linking.openURL(res.uri);
-      } catch (error) {
-        console.error(
-          'Failed to open local file, falling back to remote URL',
-          error
-        );
-        await Linking.openURL(uri);
-      }
-    } else {
-      throw new Error('Unable to download work order report');
-    }
-  };
   const getRunningTimerDuration = (labor: Labor) => {
     return durationToHours(
       labor.duration +
@@ -341,31 +313,8 @@ export default function WODetailsScreen({
   const onGenerateReport = () => {
     setLoading(true);
     dispatch(getPDFReport(id))
-      .then(async (uri: string) => {
-        if (Platform.OS === 'ios') {
-          await actualDownload(uri);
-        } else {
-          if (Platform.OS === 'android' && Platform.Version >= 29)
-            await actualDownload(uri);
-          else {
-            try {
-              const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
-              );
-              if (granted === 'granted') {
-                await actualDownload(uri);
-              } else {
-                Alert.alert(
-                  t('error'),
-                  t('storage_permission_needed_description')
-                );
-              }
-            } catch (err) {
-              console.error(err);
-            }
-          }
-        }
-      })
+      // The browser's PDF viewer handles viewing, sharing and saving
+      .then((uri: string) => Linking.openURL(uri))
       .catch((err: Error) => console.error(err.message))
       .finally(() => setLoading(false));
   };

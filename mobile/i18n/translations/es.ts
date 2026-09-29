@@ -1512,7 +1512,17 @@ const locale = {
   talking_about: 'Hablando de',
   assistant_not_configured: 'La IA aún no está configurada para su empresa. Pídale al administrador que la configure en Ajustes.',
   assistant_unreachable: 'No se pudo contactar al asistente.',
-  no_response: 'Sin respuesta.'
+  no_response: 'Sin respuesta.',
+  install_app_title: 'Instala Atlas en este teléfono',
+  install_app_description: 'Se abre a pantalla completa desde tu pantalla de inicio, como una app.',
+  install_app_ios: 'Pulsa el botón Compartir y luego "Añadir a pantalla de inicio".',
+  install: 'Instalar',
+  not_now: 'Ahora no',
+  nfc_not_supported: 'Este navegador no puede leer etiquetas NFC. Usa Chrome en Android o escanea un código de barras.',
+  nfc_hold_tag: 'Acerca la etiqueta a la parte trasera del teléfono',
+  camera_not_supported: 'Este navegador no puede abrir la cámara. Necesita HTTPS y permiso de cámara.',
+  point_camera_at_code: 'Apunta la cámara a un código de barras o QR',
+  app_version: 'Versión de la app'
 };
 
 export default locale;

@@ -1,11 +1,11 @@
 import {
-  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View
 } from 'react-native';
 import { IField, IHash } from '../../models/form';
+import { isNfcSupported } from '../../utils/pwa';
 import * as Yup from 'yup';
 import { ObjectSchema } from 'yup';
 import {
@@ -56,8 +56,8 @@ export default function Form(props: OwnProps) {
   const { t } = useTranslation();
   const shape: IHash<any> = {};
   const theme = useTheme();
-  // Disable NFC-related form inputs on iOS (barcode only).
-  const isNfcEnabled = Platform.OS !== 'ios';
+  // NFC inputs only where the browser can read tags (Web NFC: Android Chrome).
+  const isNfcEnabled = isNfcSupported();
   props.fields.forEach((f) => {
     shape[f.name] = Yup.string();
     if (f.required) {

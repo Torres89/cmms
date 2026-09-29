@@ -1,4 +1,5 @@
-import { Alert, Platform, StyleSheet } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
+import { isNfcSupported } from '../utils/pwa';
 import { View } from '../components/Themed';
 import { Divider, List, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -17,8 +18,8 @@ export default function ScanAssetScreen({
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const hasBarcodeNfcEntitlement = useLicenseEntitlement('NFC_BARCODE');
-  // NFC scanning must remain disabled on iOS; keep barcode only there.
-  const isNfcEnabled = Platform.select({ ios: false, default: true });
+  // Web NFC exists on Android Chrome only; elsewhere offer barcode only.
+  const isNfcEnabled = isNfcSupported();
   const { showSnackBar } = useContext(CustomSnackBarContext);
 
   const showLicenseError = () => {

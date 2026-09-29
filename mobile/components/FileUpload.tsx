@@ -3,13 +3,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as React from 'react';
 import { useContext, useRef, useState } from 'react';
-import * as FileSystem from 'expo-file-system';
 import {
   Alert,
   Image,
-  Linking,
-  PermissionsAndroid,
-  Platform,
   ScrollView,
   Text,
   TouchableOpacity
@@ -20,6 +16,7 @@ import mime from 'mime';
 import { ActionSheetRef, SheetManager } from 'react-native-actions-sheet';
 import { CustomSnackBarContext } from '../contexts/CustomSnackBarContext';
 import { IFile } from '../models/file';
+import { assetToFile } from '../utils/overall';
 import {
   DocumentPickerOptions,
   DocumentPickerResult
@@ -55,133 +52,43 @@ export default function FileUpload({
     }
     onChange(files);
   };
-  const getFileInfo = async (fileURI: string) => {
-    const fileInfo = await FileSystem.getInfoAsync(fileURI);
-    return fileInfo;
-  };
   const isMoreThanTheMB = (fileSize: number, limit: number) => {
     return fileSize / 1024 / 1024 > limit;
   };
+  // Browsers ask for camera and photo access themselves when the file input
+  // opens, so there is no permission step here.
   const takePhoto = async () => {
     try {
-      // Request camera permissions using modern API directly from ImagePicker
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (status === 'granted') {
-        try {
-          const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsMultipleSelection: multiple,
-            selectionLimit: 10,
-            quality: 1
-          });
-
-          // Handle both new and old API response formats
-          // New versions use 'canceled', old versions use 'cancelled'
-          if (result.canceled === true) {
-            console.log('Camera was canceled');
-            return;
-          }
-
-          await onImagePicked(result);
-        } catch (e) {
-          console.error('Error taking photo:', e);
-          Alert.alert('Error', 'Failed to take photo. Please try again.');
-        }
-      } else {
-        // Check if we can ask again
-        const { canAskAgain } = await ImagePicker.getCameraPermissionsAsync();
-
-        if (!canAskAgain) {
-          // User selected "Don't ask again" or "Deny" on Android
-          Alert.alert(
-            'Permission Required',
-            'Camera access is needed to take photos. Please enable it in app settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Open Settings',
-                onPress: () => Linking.openSettings()
-              }
-            ]
-          );
-        } else {
-          // First-time denial
-          Alert.alert(
-            'Permission Denied',
-            'Camera access is needed to take photos.',
-            [{ text: 'OK' }]
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Error requesting camera permission:', error);
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 1
+      });
+      if (result.canceled === true) return;
+      await onImagePicked(result);
+    } catch (e) {
+      console.error('Error taking photo:', e);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
   const pickImage = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (permissionResult.granted === false) {
-        // Permission denied
-        if (permissionResult.canAskAgain === false) {
-          // User selected "Don't ask again" or "Deny" on Android
-          Alert.alert(
-            'Permission Required',
-            'Media library access is needed to select images. Please enable it in app settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Open Settings',
-                onPress: () => Linking.openSettings()
-              }
-            ]
-          );
-        } else {
-          // First-time denial
-          Alert.alert(
-            'Permission Denied',
-            'Media library access is needed to select images.',
-            [{ text: 'OK' }]
-          );
-        }
-        return;
-      }
-
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: multiple,
         selectionLimit: multiple ? 10 : 1,
         quality: 1
       });
-
-      // ImagePicker.launchImageLibraryAsync now returns { canceled: boolean } in newer versions
-      // and { cancelled: boolean } in older versions, so handle both cases
-      if (result.canceled === true) {
-        console.log('Image picker was canceled');
-        return;
-      }
-
-      // Process selected images
+      if (result.canceled === true) return;
       await onImagePicked(result);
-
       return result;
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
-  const checkSize = async (uri: string) => {
-    const fileInfo = await getFileInfo(uri);
-    if (!('size' in fileInfo)) return;
-    if (!fileInfo?.size) {
-      Alert.alert("Can't select this file as the size is unknown.");
-      throw new Error();
-    }
-    if (isMoreThanTheMB(fileInfo.size, maxFileSize)) {
+  const checkSize = (size?: number) => {
+    if (size === undefined || size === null) return;
+    if (isMoreThanTheMB(size, maxFileSize)) {
       showSnackBar(t('max_file_size_error', { size: maxFileSize }), 'error');
       throw new Error(t('max_file_size_error', { size: maxFileSize }));
     }
@@ -189,21 +96,9 @@ export default function FileUpload({
   const onImagePicked = async (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled) {
       for (const asset of result.assets) {
-        const { uri } = asset;
-        await checkSize(uri);
+        checkSize(asset.file?.size ?? asset.fileSize);
       }
-      onChangeInternal(
-        result.assets.map((asset) => {
-          const fileName =
-            asset.uri.split('/')[asset.uri.split('/').length - 1];
-          return {
-            uri: asset.uri,
-            name: fileName,
-            type: mime.getType(fileName)
-          };
-        }),
-        'image'
-      );
+      onChangeInternal(result.assets.map(assetToFile), 'image');
     }
   };
   const pickFile = async () => {
@@ -218,7 +113,6 @@ export default function FileUpload({
                 'text/csv'
               ]
             : '*/*', // Default to all file types
-        copyToCacheDirectory: true,
         multiple
       };
 
@@ -239,7 +133,7 @@ export default function FileUpload({
 
       // Loop through selected assets to perform size checks
       for (const asset of selectedAssets) {
-        await checkSize(asset.uri);
+        checkSize(asset.file?.size ?? asset.size);
 
         filesToUpload.push({
           uri: asset.uri,
@@ -247,7 +141,8 @@ export default function FileUpload({
           type:
             mime.getType(asset.name) ||
             asset.mimeType ||
-            'application/octet-stream' // Use mime or the asset's mimeType
+            'application/octet-stream', // Use mime or the asset's mimeType
+          file: asset.file
         });
 
         // Break the loop if 'multiple' is false, as the current display logic only shows one file.

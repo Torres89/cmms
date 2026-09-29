@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover lets the safe-area insets reach the notch and the
+         home indicator; react-native-safe-area-context reads them back. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>%WEB_TITLE%</title>
+
+    <!-- Installability -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#5569ff" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+
+    <!-- iOS: Safari ignores most of the manifest and reads these instead -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Atlas" />
+
+    <!-- API and agent URLs, written by the container at start -->
+    <script src="/env.js"></script>
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+        overscroll-behavior: none;
+        background-color: #ffffff;
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+      /* Inputs under 16px make iOS Safari zoom in on focus */
+      input,
+      textarea,
+      select {
+        font-size: 16px;
+      }
+      #atlas-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        z-index: 1;
+      }
+      #atlas-splash img {
+        width: 160px;
+        height: 160px;
+      }
+    </style>
+
+    <script>
+      // Chrome fires this once, often before the bundle has loaded; keep it
+      // for the in-app Install button (components/InstallPrompt.tsx).
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.__deferredInstallPrompt = event;
+        window.dispatchEvent(new Event('atlas-install-available'));
+      });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function (error) {
+            console.warn('Service worker registration failed', error);
+          });
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="atlas-splash"><img src="/icons/icon-512.png" alt="Atlas CMMS" /></div>
+    <div id="root"></div>
+  </body>
+</html>

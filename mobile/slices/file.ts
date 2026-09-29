@@ -1,7 +1,7 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import type { AppThunk } from '../store';
-import File, { FileType } from '../models/file';
+import File, { FileType, IFile } from '../models/file';
 import api, { authHeader } from '../utils/api';
 import { getInitialPage, Page, SearchCriteria } from '../models/page';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -109,7 +109,7 @@ export const editFile =
 
 export const addFiles =
   (
-    files: { uri: string; name: string; type: string }[],
+    files: IFile[],
     fileType: FileType = 'OTHER',
     taskId?: number,
     hidden?: 'true' | 'false'
@@ -119,10 +119,13 @@ export const addFiles =
     const companyId = await AsyncStorage.getItem('companyId');
     const headers = await authHeader(false);
     delete headers['Content-Type'];
-    files.forEach((file) => {
-      //@ts-ignore
-      formData.append('files', file);
-    });
+    // Browsers only accept real Blobs in FormData, not the { uri, name, type }
+    // objects React Native's fetch understood. Pickers hand us the File; for
+    // data: and blob: URIs (recordings, signatures) fetch() materialises one.
+    for (const file of files) {
+      const blob = file.file ?? (await (await fetch(file.uri)).blob());
+      formData.append('files', blob, file.name);
+    }
     formData.append('folder', `company ${companyId}`);
     formData.append('type', fileType);
     formData.append('hidden', hidden);

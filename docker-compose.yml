@@ -31,6 +31,8 @@ services:
       FASTSPRING_PWD: ${FASTSPRING_PWD}
       FASTSPRING_USER: ${FASTSPRING_USER}
       PUBLIC_FRONT_URL: ${PUBLIC_FRONT_URL}
+      # The mobile PWA's origin, for CORS and the notifications websocket
+      PUBLIC_MOBILE_URL: ${PUBLIC_MOBILE_URL:-http://localhost:3002}
       GCP_BUCKET_NAME: ${GCP_BUCKET_NAME}
       GCP_JSON: ${GCP_JSON}
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
@@ -121,6 +123,21 @@ services:
     depends_on:
       - api
       - agent
+  # Installable mobile web app (PWA) for technicians. Installs from the browser
+  # on Android and iPhone; it must be served over HTTPS in production.
+  mobile:
+    build:
+      context: ./mobile
+      dockerfile: Dockerfile
+    image: atlas-cmms-mobile:local
+    container_name: atlas-cmms-mobile
+    environment:
+      API_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+      AGENT_URL: ${AGENT_URL:-http://localhost:8001}
+    ports:
+      - "3002:3000"
+    depends_on:
+      - api
   agent:
     build:
       context: ./cmms-agent
@@ -132,6 +149,8 @@ services:
     environment:
       - CMMS_API_URL=http://api:8080
       - CMMS_FRONT_URL=${PUBLIC_FRONT_URL:-http://localhost:3000}
+      # The mobile PWA calls the agent directly for the on-machine assistant
+      - AGENT_ALLOWED_ORIGINS=${PUBLIC_MOBILE_URL:-http://localhost:3002}
       # Chat sessions, the tool audit trail and LLM usage metering live in the
       # same Postgres the API uses.
       - DB_URL=postgres:5432/atlas

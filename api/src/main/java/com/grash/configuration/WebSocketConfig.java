@@ -12,6 +12,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${frontend.url}")
     private String frontendUrl;
+    @Value("${mobile.url:}")
+    private String mobileUrl;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -22,7 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(frontendUrl)
+                .setAllowedOrigins(WebMvcConfig.allowedOrigins(frontendUrl, mobileUrl))
                 .withSockJS();
     }
 }

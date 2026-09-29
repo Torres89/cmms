@@ -18,7 +18,6 @@ import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
 import { RootStackScreenProps } from '../types';
 import Constants from 'expo-constants';
-import * as Updates from 'expo-updates';
 import { showMessage } from 'react-native-flash-message';
 import { CustomSnackBarContext } from '../contexts/CustomSnackBarContext';
 import tr from '../i18n/translations/tr';
@@ -66,8 +65,8 @@ export default function SettingsScreen({
         <Dialog visible={openDevInfo} onDismiss={() => setOpenDevInfo(false)}>
           <Dialog.Title>{t('Dev Info')}</Dialog.Title>
           <Dialog.Content>
-            <Text variant='titleMedium'>{t('Build ID')}</Text>
-            <Text variant='bodyMedium'>{Updates.updateId}</Text>
+            <Text variant='titleMedium'>{t('app_version', 'App version')}</Text>
+            <Text variant='bodyMedium'>{Constants.expoConfig?.version}</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setOpenDevInfo(false)}>{t('cancel')}</Button>

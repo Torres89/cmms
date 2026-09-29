@@ -1,16 +1,7 @@
-import {
-  createContext,
-  FC,
-  ReactNode,
-  useEffect,
-  useReducer,
-  useRef,
-  useState
-} from 'react';
+import { createContext, FC, ReactNode, useEffect, useReducer, useState } from 'react';
 import { OwnUser, UserResponseDTO } from '../models/user';
 import api, { authHeader } from '../utils/api';
 import { verify } from '../utils/jwt';
-import { Alert, AppState, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PropTypes from 'prop-types';
 import {
@@ -32,10 +23,6 @@ import OwnSubscription from '../models/ownSubscription';
 import { PlanFeature } from '../models/subscriptionPlan';
 import { IField } from '../models/form';
 import WorkOrder from '../models/workOrder';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
-import { useTranslation } from 'react-i18next';
-import analytics from '@react-native-firebase/analytics';
 import { useDispatch } from '../store';
 import { revertAll } from '../utils/redux';
 import { getApiUrl } from '../config';
@@ -46,7 +33,6 @@ import Meter from '../models/meter';
 import { AssetDTO } from '../models/asset';
 import Location from '../models/location';
 import { UiConfiguration } from '../models/uiConfiguration';
-import Constants from 'expo-constants';
 
 interface AuthState {
   isInitialized: boolean;
@@ -500,33 +486,9 @@ const AuthContext = createContext<AuthContextValue>({
 
 export const AuthProvider: FC<AuthProviderProps> = (props) => {
   const { children } = props;
-  const { t } = useTranslation();
   const [state, dispatch] = useReducer(reducer, initialAuthState);
-  const appState = useRef(AppState.currentState);
-  const [openedSettings, setOpenedSettings] = useState<boolean>(false);
   const globalDispatch = useDispatch();
   const [stompClient, setStompClient] = useState(null);
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        if (openedSettings) {
-          registerForPushNotificationsAsync().then((token) =>
-            savePushToken(token)
-          );
-          setOpenedSettings(false);
-        }
-      }
-
-      appState.current = nextAppState;
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [openedSettings]);
   useEffect(() => {
     const disconnect = () => {
       if (stompClient) {
@@ -582,86 +544,12 @@ export const AuthProvider: FC<AuthProviderProps> = (props) => {
     return user;
   };
 
-  async function registerForPushNotificationsAsync() {
-    let token: string;
-    if (Device.isDevice) {
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      if (finalStatus !== 'granted') {
-        Alert.alert(t('error'), t('failed_push_notification'));
-        return;
-      }
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ??
-        Constants?.easConfig?.projectId;
-
-      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    } else {
-      Alert.alert('Must use physical device for Push Notifications');
-    }
-
-    if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#5569ff'
-      });
-    }
-
-    return token;
-  }
-
-  const checkPushNotificationState = async () => {
-    // Get the current permission status using expo-notifications
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-
-      if (status === 'granted') {
-        registerForPushNotificationsAsync().then((token) =>
-          savePushToken(token)
-        );
-      } else {
-        // Permission denied
-        Alert.alert(
-          t('no_notification_permission'),
-          t('no_notification_permission_description'),
-          [
-            { text: t('cancel'), onPress: () => console.log('cancel') },
-            {
-              text: t('allow'),
-              onPress: () => {
-                Linking.openSettings();
-                setOpenedSettings(true);
-              }
-            }
-          ],
-          { cancelable: false }
-        );
-        return;
-      }
-    } else {
-      // Permission was already granted
-      registerForPushNotificationsAsync().then((token) => savePushToken(token));
-    }
-  };
-  const savePushToken = (token: string) => {
-    if (token)
-      api.post<{ success: boolean }>(`notifications/push-token`, { token });
-  };
+  // Native push (Expo tokens) went with the native app. Notifications still
+  // arrive live over the STOMP socket above while the app is open.
   const setupUser = async (companySettings: CompanySettings) => {
     switchLanguage({
       lng: companySettings.generalPreferences.language.toLowerCase()
     });
-    checkPushNotificationState();
   };
   const getInfos = async (): Promise<void> => {
     // AsyncStorage.clear();
@@ -770,12 +658,6 @@ export const AuthProvider: FC<AuthProviderProps> = (props) => {
       const user = await updateUserInfos();
       const company = await api.get<Company>(`companies/${user.companyId}`);
       await setupUser(company.companySettings);
-      await analytics().logEvent('sign_up', {
-        email: values.email,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        employeesCount: values.employeesCount
-      });
       dispatch({
         type: 'REGISTER',
         payload: {

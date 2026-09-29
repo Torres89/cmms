@@ -122,10 +122,14 @@ export default function AudioRecorder({
         const sanitizedTitle = title
           ? title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
           : 'audio_recording';
+        // Browsers record WebM (Chrome) or MP4 (Safari), not m4a
+        const file = await (await fetch(uri)).blob();
+        const type = (file.type || 'audio/webm').split(';')[0];
         onChange({
           uri,
-          name: `${sanitizedTitle}.m4a`,
-          type: 'audio/m4a'
+          name: `${sanitizedTitle}.${type.includes('mp4') ? 'm4a' : 'webm'}`,
+          type,
+          file
         });
       }
     } catch (error) {

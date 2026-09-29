@@ -1,10 +1,10 @@
-import { Platform } from 'react-native';
+import { isNfcSupported } from './pwa';
 import { IField } from '../models/form';
 import { formatSelect, formatSelectMultiple } from './formatters';
 import { isTask } from '../models/tasks';
 
-// iOS build must ignore NFC-specific fields and logic.
-const isIos = Platform.OS === 'ios';
+// NFC fields only where the browser can read tags (Web NFC: Android Chrome).
+const nfcUnavailable = !isNfcSupported();
 
 export const getWorkOrderFields = (t): IField[] => {
   return [
@@ -219,7 +219,7 @@ export const getAssetFields = (t): Array<IField> => {
       type: 'barcode',
       label: t('barcode')
     },
-    ...(!isIos
+    ...(!nfcUnavailable
       ? [
           {
             name: 'nfcId',

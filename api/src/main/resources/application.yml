@@ -86,6 +86,10 @@ security:
   secret-encryption-key: ${SECRET_ENCRYPTION_KEY:}
 frontend:
   url: ${PUBLIC_FRONT_URL}
+# The installable mobile web app (mobile/) runs on its own origin, so it needs
+# CORS and websocket access alongside the web app. Empty: web app only.
+mobile:
+  url: ${PUBLIC_MOBILE_URL:}
 mail:
   recipients: ${MAIL_RECIPIENTS}
   enable: ${ENABLE_EMAIL_NOTIFICATIONS}
