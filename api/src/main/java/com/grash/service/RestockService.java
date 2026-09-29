@@ -7,11 +7,16 @@ import com.grash.model.Meter;
 import com.grash.model.Part;
 import com.grash.model.PartSupplier;
 import com.grash.model.Reading;
+import com.grash.repository.AssetRepository;
 import com.grash.repository.PartConsumptionRepository;
+import com.grash.repository.PartQuantityRepository;
 import com.grash.repository.ReadingRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,15 +30,26 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RestockService {
 
     private static final double MILLIS_PER_DAY = 1000d * 60 * 60 * 24;
+    private static final double DAYS_PER_MONTH = 30.4375;
 
     private final AssetBomService assetBomService;
     private final PartSourcingService partSourcingService;
     private final MeterService meterService;
     private final ReadingRepository readingRepository;
     private final PartConsumptionRepository partConsumptionRepository;
+    private final PartQuantityRepository partQuantityRepository;
+    private final AssetRepository assetRepository;
+
+    /** Replaceable in tests; "today" is otherwise the wall clock. */
+    private Clock clock = Clock.systemDefaultZone();
+
+    void setClock(Clock clock) {
+        this.clock = clock;
+    }
 
     /**
      * Consumables coming due on a machine within the horizon.
@@ -46,8 +62,10 @@ public class RestockService {
         kit.setAssetName(asset.getName());
         kit.setHorizonDays(horizonDays);
 
-        double hoursPerDay = hoursPerDay(asset);
+        List<Reading> hoursReadings = hoursReadings(asset);
+        double hoursPerDay = hoursPerDay(hoursReadings);
         kit.setHoursPerDay(hoursPerDay);
+        List<Long> subtree = subtreeIds(asset);
 
         for (AssetBomLine line : assetBomService.findConsumables(asset.getId())) {
             Part part = line.getPart();
@@ -63,7 +81,9 @@ public class RestockService {
             kitLine.setOnHand(part.getQuantity());
             kitLine.setUnit(part.getUnit());
 
-            Integer daysUntilDue = daysUntilDue(line, hoursPerDay);
+            Date lastReplaced = lastReplacement(line, asset, subtree);
+            kitLine.setLastReplacedAt(lastReplaced);
+            Integer daysUntilDue = daysUntilDue(line, lastReplaced, hoursReadings, hoursPerDay);
             kitLine.setDaysUntilDue(daysUntilDue);
 
             Optional<PartSupplier> preferred = partSourcingService.findPreferredSupplier(part.getId());
@@ -79,7 +99,8 @@ public class RestockService {
             });
 
             // Lead time is the whole reason this exists: a part due in 20 days
-            // with a 30-day lead time is already late.
+            // with a 30-day lead time is already late. Overdue (<= 0) is always
+            // urgent.
             int leadTime = kitLine.getLeadTimeDays() != null ? kitLine.getLeadTimeDays()
                     : (part.getLeadTimeDaysTypical() == null ? 0 : part.getLeadTimeDaysTypical().intValue());
             kitLine.setUrgent(daysUntilDue != null && daysUntilDue <= leadTime);
@@ -104,41 +125,147 @@ public class RestockService {
     }
 
     /**
+     * When a consumable was last replaced on this machine.
+     * <p>
+     * The last completed work order against the machine or anything under it
+     * that used the part. A line that has never been replaced here counts from
+     * when it was documented — or from the machine's in-service date when that
+     * is older, because a filter nobody has recorded changing since the machine
+     * went in is not "fresh as of the day someone typed it in".
+     */
+    Date lastReplacement(AssetBomLine line, Asset asset, Collection<Long> subtree) {
+        Part part = line.getPart();
+        if (part != null && part.getId() != null && !subtree.isEmpty()) {
+            try {
+                Date used = partQuantityRepository.findLastCompletedUse(part.getId(), subtree);
+                if (used != null) {
+                    return used;
+                }
+            } catch (Exception e) {
+                log.debug("Could not look up the last use of part {} on asset {}: {}",
+                        part.getId(), asset.getId(), e.getMessage());
+            }
+        }
+        Date fallback = line.getCreatedAt();
+        Date inService = asset.getInServiceDate();
+        if (inService != null && (fallback == null || inService.before(fallback))) {
+            fallback = inService;
+        }
+        return fallback;
+    }
+
+    /**
+     * Days until a consumable is due, counted from its last replacement;
+     * zero or negative when it is already due. With both an hour and a month
+     * interval, whichever comes first.
+     * <p>
+     * Hours are measured on the machine's hours meter since the replacement,
+     * then projected forward at the measured rate. Without a rate an hour
+     * interval can still say "overdue", but cannot put a date on "not yet".
+     */
+    Integer daysUntilDue(AssetBomLine line, Date lastReplaced, List<Reading> hoursReadings, double hoursPerDay) {
+        Integer byHours = null;
+        if (line.getReplaceIntervalHours() != null) {
+            Double used = hoursSince(lastReplaced, hoursReadings);
+            double remaining = line.getReplaceIntervalHours() - (used == null ? 0 : used);
+            if (hoursPerDay > 0) {
+                byHours = (int) Math.floor(remaining / hoursPerDay);
+            } else if (remaining <= 0) {
+                byHours = 0;
+            }
+        }
+        Integer byMonths = null;
+        if (line.getReplaceIntervalMonths() != null) {
+            if (lastReplaced == null) {
+                byMonths = (int) Math.round(line.getReplaceIntervalMonths() * DAYS_PER_MONTH);
+            } else {
+                Calendar due = Calendar.getInstance();
+                due.setTime(lastReplaced);
+                due.add(Calendar.MONTH, line.getReplaceIntervalMonths());
+                byMonths = (int) Math.floor((due.getTimeInMillis() - clock.millis()) / MILLIS_PER_DAY);
+            }
+        }
+        if (byHours == null) return byMonths;
+        if (byMonths == null) return byHours;
+        return Math.min(byHours, byMonths);
+    }
+
+    /**
+     * Machine hours run since a date: the latest reading now, less the reading
+     * at (or, failing that, first after) the date. Null when it can't be known.
+     */
+    private Double hoursSince(Date since, List<Reading> readings) {
+        if (since == null || readings.isEmpty()) {
+            return null;
+        }
+        Reading base = null;
+        for (Reading reading : readings) {
+            if (reading.getCreatedAt() != null && !reading.getCreatedAt().after(since)) {
+                base = reading;
+            }
+        }
+        if (base == null) {
+            base = readings.get(0);
+        }
+        Reading latest = readings.get(readings.size() - 1);
+        return Math.max(0, latest.getValue() - base.getValue());
+    }
+
+    /**
+     * The machine's hours meter, oldest reading first. With several hour
+     * meters (spindle, power-on, idle) it is the one flagged as the usage
+     * basis, or failing that the oldest — the same rule components are aged by.
+     */
+    private List<Reading> hoursReadings(Asset asset) {
+        List<Meter> hourMeters = meterService.findByAsset(asset.getId()).stream()
+                .filter(meter -> meter.getUnit() != null
+                        && meter.getUnit().toLowerCase(Locale.ROOT).startsWith("h"))
+                .sorted(Comparator.comparing(Meter::getId))
+                .collect(Collectors.toList());
+        if (hourMeters.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Meter meter = hourMeters.stream().filter(Meter::isUsageBasis).findFirst().orElse(hourMeters.get(0));
+        return readingRepository.findByMeter_Id(meter.getId()).stream()
+                .filter(reading -> reading.getCreatedAt() != null)
+                .sorted(Comparator.comparing(Reading::getCreatedAt))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Average machine hours per day, from the meter history.
      * <p>
      * Returns 0 when there is nothing to measure from, which makes hour-based
      * intervals fall back to their calendar equivalent rather than producing an
      * imaginary date.
      */
-    private double hoursPerDay(Asset asset) {
-        for (Meter meter : meterService.findByAsset(asset.getId())) {
-            String unit = meter.getUnit() == null ? "" : meter.getUnit().toLowerCase(Locale.ROOT);
-            if (!unit.startsWith("h")) {
-                continue;
-            }
-            List<Reading> readings = new ArrayList<>(readingRepository.findByMeter_Id(meter.getId()));
-            if (readings.size() < 2) {
-                continue;
-            }
-            readings.sort(Comparator.comparing(Reading::getCreatedAt));
-            Reading first = readings.get(0);
-            Reading last = readings.get(readings.size() - 1);
-            double days = (last.getCreatedAt().getTime() - first.getCreatedAt().getTime()) / MILLIS_PER_DAY;
-            if (days >= 1 && last.getValue() > first.getValue()) {
-                return (last.getValue() - first.getValue()) / days;
-            }
+    private double hoursPerDay(List<Reading> readings) {
+        if (readings.size() < 2) {
+            return 0;
+        }
+        Reading first = readings.get(0);
+        Reading last = readings.get(readings.size() - 1);
+        double days = (last.getCreatedAt().getTime() - first.getCreatedAt().getTime()) / MILLIS_PER_DAY;
+        if (days >= 1 && last.getValue() > first.getValue()) {
+            return (last.getValue() - first.getValue()) / days;
         }
         return 0;
     }
 
-    private Integer daysUntilDue(AssetBomLine line, double hoursPerDay) {
-        if (line.getReplaceIntervalHours() != null && hoursPerDay > 0) {
-            return (int) Math.round(line.getReplaceIntervalHours() / hoursPerDay);
+    /** The asset and everything beneath it. */
+    private List<Long> subtreeIds(Asset asset) {
+        List<Long> ids = new ArrayList<>();
+        Deque<Long> queue = new ArrayDeque<>();
+        queue.add(asset.getId());
+        while (!queue.isEmpty() && ids.size() < 1000) {
+            Long id = queue.poll();
+            if (id == null || ids.contains(id)) continue;
+            ids.add(id);
+            for (Asset child : assetRepository.findByParentAsset_Id(id, Sort.unsorted())) {
+                queue.add(child.getId());
+            }
         }
-        if (line.getReplaceIntervalMonths() != null) {
-            return (int) Math.round(line.getReplaceIntervalMonths() * 30.4375);
-        }
-        return null;
+        return ids;
     }
 
     /**

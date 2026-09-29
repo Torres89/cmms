@@ -259,6 +259,9 @@ const appRoutes = [
       {
         path: ':assetId',
         children: [
+          // A bare /app/assets/:assetId (a pasted link, the dossier's "open
+          // machine") lands on the details tab instead of a blank page.
+          { index: true, element: <Navigate to="details" replace /> },
           { path: 'work-orders', element: <ShowAsset /> },
           { path: 'details', element: <ShowAsset /> },
           // The Parts tab was folded into Parts & BOM and the Files tab into

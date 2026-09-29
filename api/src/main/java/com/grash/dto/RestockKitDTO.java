@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -41,7 +42,13 @@ public class RestockKitDTO {
         private double onHand;
         /** How many more are needed than are on the shelf. */
         private double shortfall;
+        /** Negative when already overdue. */
         private Integer daysUntilDue;
+        /**
+         * The last completed work order that used this part on the machine, or
+         * when the line was documented if it has never been replaced here.
+         */
+        private Date lastReplacedAt;
         private String supplierName;
         private Double unitPrice;
         private String currency;

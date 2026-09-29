@@ -5,7 +5,13 @@ function api<T>(url: string, options: Options): Promise<T> {
   return fetch(url, { headers: authHeader(false), ...options }).then(
     async (response) => {
       if (!response.ok) {
-        throw new Error(JSON.stringify(await response.json()));
+        // An error with no JSON body (a proxy error page, an empty 403) must
+        // still reject with something getErrorMessage can read, not with
+        // "Unexpected end of JSON input".
+        const body = await response
+          .json()
+          .catch(() => ({ status: response.status }));
+        throw new Error(JSON.stringify(body));
       }
       if (options?.raw) return response as unknown as Promise<T>;
       return response.json() as Promise<T>;
@@ -61,7 +67,8 @@ export const getErrorMessage = (
 ): string => {
   try {
     const parsed = JSON.parse(error.message);
-    return parsed?.message ?? error.message ?? defaultMessage;
+    // A parsed body without a message is raw JSON — not something to show.
+    return parsed?.message ?? defaultMessage ?? error.message;
   } catch {
     return error.message ?? defaultMessage;
   }

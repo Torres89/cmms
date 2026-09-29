@@ -60,6 +60,7 @@ public class WorkOrderService {
     private final MailServiceFactory mailServiceFactory;
     private final WorkOrderCategoryService workOrderCategoryService;
     private WorkflowService workflowService;
+    private MaintenanceIntervalService maintenanceIntervalService;
     private final MessageSource messageSource;
     private final CustomSequenceService customSequenceService;
 
@@ -68,9 +69,11 @@ public class WorkOrderService {
     private final LicenseService licenseService;
 
     @Autowired
-    public void setDeps(@Lazy WorkflowService workflowService
+    public void setDeps(@Lazy WorkflowService workflowService,
+                        @Lazy MaintenanceIntervalService maintenanceIntervalService
     ) {
         this.workflowService = workflowService;
+        this.maintenanceIntervalService = maintenanceIntervalService;
     }
 
     @Transactional
@@ -80,9 +83,7 @@ public class WorkOrderService {
             WorkOrderPostDTO workOrderPostDTO = (WorkOrderPostDTO) workOrder;
             workOrder = workOrderMapper.fromPostDto(workOrderPostDTO);
             if (workOrderPostDTO.getAsset() != null && workOrderPostDTO.getAssetStatus() != null) {
-                Asset asset = assetService.findById(workOrderPostDTO.getAsset().getId()).get();
-                asset.setStatus(workOrderPostDTO.getAssetStatus());
-                assetService.save(asset);
+                applyAssetStatus(workOrderPostDTO.getAsset().getId(), workOrderPostDTO.getAssetStatus(), company);
             }
         }
         workOrder.setCustomId(getWorkOrderNumber(company));
@@ -95,6 +96,35 @@ public class WorkOrderService {
         workflows.forEach(workflow -> workflowService.runWorkOrder(workflow, savedWorkOrder));
 
         return savedWorkOrder;
+    }
+
+    /**
+     * Put the asset into the status a new work order reports it in.
+     * <p>
+     * Goes through the same downtime path as changing the status on the asset
+     * itself: a breakdown work order that marks the machine DOWN has to open a
+     * downtime record, or MTBF and MTTR are computed from nothing. Completing
+     * the work order closes it again (see the change-status endpoint).
+     */
+    private void applyAssetStatus(Long assetId, AssetStatus newStatus, Company company) {
+        Asset asset = assetService.findById(assetId)
+                .orElseThrow(() -> new CustomException("Asset not found", HttpStatus.NOT_FOUND));
+        AssetStatus current = asset.getStatus();
+        boolean wasDown = current != null && current.isReallyDown();
+        Locale locale = Helper.getLocale(company);
+        if (newStatus.isReallyDown() && !wasDown) {
+            assetService.triggerDownTime(asset.getId(), locale, newStatus);
+        } else if (!newStatus.isReallyDown() && wasDown) {
+            assetService.stopDownTime(asset.getId(), locale);
+            if (newStatus != AssetStatus.OPERATIONAL) {
+                Asset stopped = assetService.findById(assetId).orElse(asset);
+                stopped.setStatus(newStatus);
+                assetService.save(stopped);
+            }
+        } else if (newStatus != current) {
+            asset.setStatus(newStatus);
+            assetService.save(asset);
+        }
     }
 
     public String getWorkOrderNumber(Company company) {
@@ -226,7 +256,26 @@ public class WorkOrderService {
     public WorkOrder saveAndFlush(WorkOrder workOrder) {
         WorkOrder updatedWorkOrder = workOrderRepository.saveAndFlush(workOrder);
         em.refresh(updatedWorkOrder);
+        recordPreventiveMaintenanceCompletion(updatedWorkOrder);
         return updatedWorkOrder;
+    }
+
+    /**
+     * A completed work order from an interval-driven PM restarts that PM's
+     * counters: last done now, at whatever the meter reads now. Without this
+     * the PM stays due forever and the next reading generates the same service
+     * again. Idempotent on the completion time, so saving the same completed
+     * work order twice is harmless.
+     */
+    private void recordPreventiveMaintenanceCompletion(WorkOrder workOrder) {
+        if (workOrder.getStatus() != Status.COMPLETE || workOrder.getCompletedOn() == null
+                || workOrder.getParentPreventiveMaintenance() == null) {
+            return;
+        }
+        Long pmId = workOrder.getParentPreventiveMaintenance().getId();
+        if (maintenanceIntervalService.isIntervalDriven(pmId)) {
+            maintenanceIntervalService.recordCompletion(pmId, workOrder.getCompletedOn());
+        }
     }
 
     public WorkOrder getWorkOrderFromWorkOrderBase(WorkOrderBase workOrderBase) {

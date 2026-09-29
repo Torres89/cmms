@@ -183,14 +183,13 @@ public class AssetService {
     }
 
     private void stopAssetDowntime(Asset asset) {
-        Collection<AssetDowntime> assetDowntimes = assetDowntimeService.findByAsset(asset.getId());
-        Optional<AssetDowntime> optionalRunningDowntime =
-                assetDowntimes.stream().filter(downtime -> downtime.getDuration() == 0).findFirst();
-
-        if (optionalRunningDowntime.isPresent()) {
-            AssetDowntime runningDowntime = optionalRunningDowntime.get();
-            runningDowntime.setDuration(Helper.getDateDiff(runningDowntime.getStartsOn(), new Date(),
-                    TimeUnit.SECONDS));
+        // Close every running downtime, not just the first: one left open reads
+        // as a machine that has been down ever since, and wrecks MTTR.
+        for (AssetDowntime runningDowntime : runningDowntimes(asset.getId())) {
+            // A duration of 0 is what marks a downtime as still running, so a
+            // sub-second one is recorded as one second rather than left open.
+            runningDowntime.setDuration(Math.max(1, Helper.getDateDiff(runningDowntime.getStartsOn(), new Date(),
+                    TimeUnit.SECONDS)));
             assetDowntimeService.save(runningDowntime);
         }
 
@@ -235,7 +234,18 @@ public class AssetService {
 
     }
 
+    private List<AssetDowntime> runningDowntimes(Long assetId) {
+        return assetDowntimeService.findByAsset(assetId).stream()
+                .filter(downtime -> downtime.getDuration() == 0)
+                .collect(Collectors.toList());
+    }
+
     private void createAssetDowntime(Asset asset, Date startsOn, Company company) {
+        // Already down — a second breakdown work order on the same machine, or
+        // a parent taken down by a sibling — is one outage, not two.
+        if (!runningDowntimes(asset.getId()).isEmpty()) {
+            return;
+        }
         AssetDowntime downtime = AssetDowntime.builder()
                 .startsOn(startsOn)
                 .asset(asset)

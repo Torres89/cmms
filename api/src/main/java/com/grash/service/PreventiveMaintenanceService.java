@@ -79,7 +79,10 @@ public class PreventiveMaintenanceService {
             PreventiveMaintenance pmToSave =
                     preventiveMaintenanceMapper.updatePreventiveMaintenance(savedPreventiveMaintenance,
                             preventiveMaintenance);
-            pmToSave.getSchedule().setDisabled(false);
+            // Editing a PM un-pauses its calendar schedule — unless the PM is
+            // interval-driven, where that schedule must stay retired or it
+            // would start generating a work order every day.
+            pmToSave.getSchedule().setDisabled(scheduleService.isIntervalDriven(pmToSave));
             PreventiveMaintenance updatedPM =
                     preventiveMaintenanceRepository.saveAndFlush(pmToSave);
             em.refresh(updatedPM);

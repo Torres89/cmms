@@ -369,16 +369,27 @@ public class ComponentService {
     /**
      * Meters are cumulative counters, so the usage to add is the increase since
      * the previous reading, not the reading itself.
+     * <p>
+     * "Previous" is the chronologically latest other reading, not the highest
+     * one: after 1000, 1200 and a correction to 1100, the next reading of 1150
+     * is 50 hours of use, not zero. With no previous reading at all the delta is
+     * zero — the first reading on a meter is a baseline, and treating it as
+     * usage would age a spindle fitted last week by the machine's whole life.
+     * A reading below the previous one (a correction, a replaced counter)
+     * credits nothing, and simply becomes the baseline for the next.
      */
-    private double deltaSincePreviousReading(Reading reading, Long meterId) {
-        Collection<Reading> readings = readingRepository.findByMeter_Id(meterId);
-        double previous = readings.stream()
-                .filter(r -> !r.getId().equals(reading.getId()))
-                .filter(r -> r.getValue() <= reading.getValue())
-                .mapToDouble(Reading::getValue)
-                .max()
-                .orElse(0d);
-        return reading.getValue() - previous;
+    double deltaSincePreviousReading(Reading reading, Long meterId) {
+        Comparator<Reading> chronological = Comparator
+                .comparing(Reading::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(Reading::getId, Comparator.nullsFirst(Comparator.naturalOrder()));
+        Optional<Reading> previous = readingRepository.findByMeter_Id(meterId).stream()
+                .filter(r -> !Objects.equals(r.getId(), reading.getId()))
+                .filter(r -> chronological.compare(r, reading) < 0)
+                .max(chronological);
+        if (previous.isEmpty()) {
+            return 0d;
+        }
+        return Math.max(0d, reading.getValue() - previous.get().getValue());
     }
 
     private enum CounterKind {HOURS, CYCLES, UNKNOWN}
