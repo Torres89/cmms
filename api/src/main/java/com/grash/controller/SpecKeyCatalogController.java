@@ -1,5 +1,8 @@
 package com.grash.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grash.dto.SuccessResponse;
 import com.grash.exception.CustomException;
 import com.grash.model.OwnUser;
@@ -33,6 +36,7 @@ public class SpecKeyCatalogController {
 
     private final SpecKeyCatalogRepository specKeyCatalogRepository;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
@@ -56,18 +60,19 @@ public class SpecKeyCatalogController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public SpecKeyCatalog patch(@PathVariable("id") Long id, @RequestBody SpecKeyCatalog patch,
+    public SpecKeyCatalog patch(@PathVariable("id") Long id, @RequestBody JsonNode body,
                                 HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         requireSettingsPermission(user);
         SpecKeyCatalog saved = require(id, user);
+        SpecKeyCatalog patch = readPatch(body);
         if (patch.getSpecGroup() != null) saved.setSpecGroup(patch.getSpecGroup());
         if (patch.getLabelEn() != null) saved.setLabelEn(patch.getLabelEn());
         if (patch.getLabelEs() != null) saved.setLabelEs(patch.getLabelEs());
         if (patch.getUnit() != null) saved.setUnit(patch.getUnit());
         if (patch.getValueType() != null) saved.setValueType(patch.getValueType());
         if (patch.getDisplayOrder() != null) saved.setDisplayOrder(patch.getDisplayOrder());
-        saved.setRequired(patch.isRequired());
+        if (body.has("required")) saved.setRequired(patch.isRequired());
         return specKeyCatalogRepository.save(saved);
     }
 
@@ -75,7 +80,7 @@ public class SpecKeyCatalogController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireSettingsPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         specKeyCatalogRepository.deleteById(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -90,10 +95,34 @@ public class SpecKeyCatalogController {
         return entry;
     }
 
+    /**
+     * Deleting a catalogue entry takes the role's delete permission for assets
+     * (or owning the company), not the create permission technicians have.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
     private void requireSettingsPermission(OwnUser user) {
         if (!user.getRole().getEditOtherPermissions().contains(PermissionEntity.SETTINGS)
                 && !user.getRole().getCreatePermissions().contains(PermissionEntity.ASSETS)) {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * A PATCH changes the fields it names and nothing else. Binding straight to
+     * the entity cannot tell an omitted field from a null or false one, so a
+     * client that sent only a label used to wipe the value beside it.
+     */
+    private SpecKeyCatalog readPatch(JsonNode body) {
+        try {
+            return objectMapper.treeToValue(body, SpecKeyCatalog.class);
+        } catch (JsonProcessingException e) {
+            throw new CustomException("Invalid body: " + e.getOriginalMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

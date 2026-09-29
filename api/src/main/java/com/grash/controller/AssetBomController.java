@@ -1,5 +1,8 @@
 package com.grash.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grash.dto.SuccessResponse;
 import com.grash.exception.CustomException;
 import com.grash.model.AssetBomLine;
@@ -30,6 +33,7 @@ public class AssetBomController {
 
     private final AssetBomService assetBomService;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/part/{partId}")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
@@ -58,17 +62,18 @@ public class AssetBomController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public AssetBomLine patch(@PathVariable("id") Long id, @RequestBody AssetBomLine patch,
+    public AssetBomLine patch(@PathVariable("id") Long id, @RequestBody JsonNode body,
                               HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         requireEditPermission(user);
         AssetBomLine saved = require(id, user);
+        AssetBomLine patch = readPatch(body);
         if (patch.getPart() != null) saved.setPart(patch.getPart());
         if (patch.getPositionCode() != null) saved.setPositionCode(patch.getPositionCode());
         if (patch.getQtyPerAssembly() != null) saved.setQtyPerAssembly(patch.getQtyPerAssembly());
-        saved.setConsumable(patch.isConsumable());
-        saved.setReplaceIntervalHours(patch.getReplaceIntervalHours());
-        saved.setReplaceIntervalMonths(patch.getReplaceIntervalMonths());
+        if (body.has("consumable")) saved.setConsumable(patch.isConsumable());
+        if (body.has("replaceIntervalHours")) saved.setReplaceIntervalHours(patch.getReplaceIntervalHours());
+        if (body.has("replaceIntervalMonths")) saved.setReplaceIntervalMonths(patch.getReplaceIntervalMonths());
         if (patch.getNotes() != null) saved.setNotes(patch.getNotes());
         return assetBomService.save(saved);
     }
@@ -77,7 +82,7 @@ public class AssetBomController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireEditPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         assetBomService.delete(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -92,10 +97,35 @@ public class AssetBomController {
         return line;
     }
 
+    /**
+     * Deleting asset documentation takes the role's delete permission for
+     * assets (or owning the company), not the create permission technicians
+     * have.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
     private void requireEditPermission(OwnUser user) {
         if (!user.getRole().getEditOtherPermissions().contains(PermissionEntity.ASSETS)
                 && !user.getRole().getCreatePermissions().contains(PermissionEntity.ASSETS)) {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * A PATCH changes the fields it names and nothing else. Binding straight to
+     * the entity cannot tell an omitted field from a null or false one, so a
+     * client that sent only a label used to wipe the value beside it.
+     */
+    private AssetBomLine readPatch(JsonNode body) {
+        try {
+            return objectMapper.treeToValue(body, AssetBomLine.class);
+        } catch (JsonProcessingException e) {
+            throw new CustomException("Invalid body: " + e.getOriginalMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

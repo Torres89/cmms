@@ -1966,7 +1966,24 @@ const locale = {
   update_frequency_days: 'Expected reading frequency (days)',
   nothing_to_show_yet: 'Nothing recorded yet',
   open_work_orders: 'Open',
-  could_not_load_meters: 'Could not load the meters'
+  could_not_load_meters: 'Could not load the meters',
+  could_not_add_parts: 'Could not add the parts',
+  pm_interval_every: 'Every {{intervals}}',
+  pm_interval_or: 'or',
+  pm_interval_and: 'and',
+  pm_interval_whichever_first: 'whichever comes first',
+  pm_interval_all_must_elapse: 'once all of them have passed',
+  pm_interval_due: 'Due',
+  pm_interval_progress: '{{elapsed}} of {{total}} {{unit}}',
+  pm_interval_not_started: 'Starts counting at the next reading',
+  pm_interval_generation_note: 'A work order is created automatically when this comes due.',
+  interval_unit_h: 'h',
+  interval_unit_hours: 'hours',
+  interval_unit_days: 'days',
+  interval_unit_weeks: 'weeks',
+  interval_unit_months: 'months',
+  interval_unit_years: 'years',
+  interval_unit_cycles: 'cycles'
 };
 
 export default locale;

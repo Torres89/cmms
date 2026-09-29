@@ -117,17 +117,26 @@ export const getPartQuantitiesByPurchaseOrder =
 export const editWOPartQuantities =
   (id: number, parts: number[]): AppThunk =>
   async (dispatch) => {
-    const partQuantities = await api.patch<PartQuantity[]>(
-      `${basePath}/work-order/${id}`,
-      parts,
-      null
-    );
-    dispatch(
-      slice.actions.getPartQuantitiesByWorkOrder({
-        id,
-        partQuantities
-      })
-    );
+    try {
+      const partQuantities = await api.patch<PartQuantity[]>(
+        `${basePath}/work-order/${id}`,
+        parts,
+        null
+      );
+      dispatch(
+        slice.actions.getPartQuantitiesByWorkOrder({
+          id,
+          partQuantities
+        })
+      );
+    } catch (error) {
+      // The server adds parts one at a time, so a failure can leave some of
+      // them saved. Reload what is actually on the work order so the list
+      // doesn't keep showing the selection that failed, then let the caller
+      // report the error.
+      await dispatch(getPartQuantitiesByWorkOrder(id));
+      throw error;
+    }
   };
 
 export const editPOPartQuantities =

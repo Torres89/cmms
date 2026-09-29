@@ -50,7 +50,8 @@ public class PartCategoryController {
     public PartCategory getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         if (user.getRole().getViewPermissions().contains(PermissionEntity.CATEGORIES)) {
-            Optional<PartCategory> optionalPartCategory = partCategoryService.findById(id);
+            Optional<PartCategory> optionalPartCategory = partCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
             if (optionalPartCategory.isPresent()) {
                 return partCategoryService.findById(id).get();
             } else throw new CustomException("Not found", HttpStatus.NOT_FOUND);
@@ -74,7 +75,8 @@ public class PartCategoryController {
                               @PathVariable("id") Long id,
                               HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        Optional<PartCategory> optionalPartCategory = partCategoryService.findById(id);
+        Optional<PartCategory> optionalPartCategory = partCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES)) {
             if (optionalPartCategory.isPresent()) {
                 return partCategoryService.update(id, partCategory);
@@ -90,7 +92,8 @@ public class PartCategoryController {
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
 
-        Optional<PartCategory> optionalPartCategory = partCategoryService.findById(id);
+        Optional<PartCategory> optionalPartCategory = partCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (optionalPartCategory.isPresent()) {
             if (optionalPartCategory.get().getCreatedBy().equals(user.getId()) || user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.CATEGORIES)) {
                 partCategoryService.delete(id);

@@ -93,6 +93,7 @@ public class WorkflowController {
 
         if (optionalWorkflow.isPresent()) {
             Workflow savedWorkflow = optionalWorkflow.get();
+            requireSettingsPermission(user, savedWorkflow);
             workflowService.delete(id);
             return workflowMapper.toShowDto(createWorkflow(workflow, user.getCompany()));
         } else throw new CustomException("Workflow not found", HttpStatus.NOT_FOUND);
@@ -107,10 +108,24 @@ public class WorkflowController {
         Optional<Workflow> optionalWorkflow = workflowService.findById(id);
         if (optionalWorkflow.isPresent()) {
             Workflow savedWorkflow = optionalWorkflow.get();
+            requireSettingsPermission(user, savedWorkflow);
             workflowService.delete(id);
             return new ResponseEntity(new SuccessResponse(true, "Deleted successfully"),
                     HttpStatus.OK);
         } else throw new CustomException("Workflow not found", HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Workflows are company settings: changing one needs the same permission
+     * as creating one, and only ever within the caller's own company.
+     */
+    private void requireSettingsPermission(OwnUser user, Workflow workflow) {
+        if (!workflow.getCompany().getId().equals(user.getCompany().getId())) {
+            throw new CustomException("Workflow not found", HttpStatus.NOT_FOUND);
+        }
+        if (!user.getRole().getViewPermissions().contains(PermissionEntity.SETTINGS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
     }
 
     private Workflow createWorkflow(WorkflowPostDTO workflowReq, Company company) {

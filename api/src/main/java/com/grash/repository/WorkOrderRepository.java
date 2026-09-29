@@ -74,4 +74,13 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long>, Jpa
             "FROM WorkOrder wo WHERE wo.company.id = :companyId AND wo.status!=com.grash.model.enums.Status" +
             ".COMPLETE")
     boolean hasMoreActiveThan(@Param("companyId") Long companyId, @Param("threshold") Long threshold);
+
+    /**
+     * Whether a PM already has a work order someone still has to do.
+     * Interval-driven PMs generate one work order per cycle, not one per reading.
+     */
+    @Query("SELECT CASE WHEN COUNT(wo) > 0 THEN true ELSE false END FROM WorkOrder wo " +
+            "WHERE wo.parentPreventiveMaintenance.id = :pmId AND wo.archived = false " +
+            "AND wo.status <> com.grash.model.enums.Status.COMPLETE")
+    boolean hasOpenFromPreventiveMaintenance(@Param("pmId") Long pmId);
 }

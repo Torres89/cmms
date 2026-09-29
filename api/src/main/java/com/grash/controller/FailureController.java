@@ -80,7 +80,7 @@ public class FailureController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> deleteMode(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireEditPermission(user);
+        requireDeletePermission(user, PermissionEntity.ASSETS);
         FailureMode saved = failureService.findModeById(id)
                 .orElseThrow(() -> new CustomException("Failure mode not found", HttpStatus.NOT_FOUND));
         assertSameCompany(saved.getCompany().getId(), user);
@@ -144,7 +144,7 @@ public class FailureController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> deleteEvent(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireWorkOrderPermission(user);
+        requireDeletePermission(user, PermissionEntity.WORK_ORDERS);
         FailureEvent saved = failureService.findEventById(id)
                 .orElseThrow(() -> new CustomException("Failure event not found", HttpStatus.NOT_FOUND));
         assertSameCompany(saved.getCompany().getId(), user);
@@ -154,6 +154,16 @@ public class FailureController {
 
     private void assertSameCompany(Long companyId, OwnUser user) {
         if (!companyId.equals(user.getCompany().getId())) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * Deletes take the role's delete permission for the entity (or owning the
+     * company), not the create permission that is enough to record and edit.
+     */
+    private void requireDeletePermission(OwnUser user, PermissionEntity entity) {
+        if (!user.isOwnsCompany() && !user.getRole().getDeleteOtherPermissions().contains(entity)) {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         }
     }

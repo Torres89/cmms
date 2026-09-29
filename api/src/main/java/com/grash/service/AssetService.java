@@ -12,8 +12,10 @@ import com.grash.mapper.AssetMapper;
 import com.grash.model.*;
 import com.grash.model.enums.AssetLevel;
 import com.grash.model.enums.AssetStatus;
+import com.grash.model.enums.ComponentStatus;
 import com.grash.model.enums.NotificationType;
 import com.grash.repository.AssetRepository;
+import com.grash.repository.ComponentInstanceRepository;
 import com.grash.utils.Helper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,7 @@ import static com.grash.utils.Consts.usageBasedLicenseLimits;
 @RequiredArgsConstructor
 public class AssetService {
     private final AssetRepository assetRepository;
+    private final ComponentInstanceRepository componentInstanceRepository;
     private LocationService locationService;
     private final FileService fileService;
     private final AssetCategoryService assetCategoryService;
@@ -119,6 +122,15 @@ public class AssetService {
     }
 
     public void delete(Long id) {
+        // A serialized component outlives the machine it was fitted to. The
+        // position column is cleared by the cascade, but left alone the
+        // component would still read IN_SERVICE - installed nowhere.
+        List<ComponentInstance> installed = componentInstanceRepository.findInstalledInSubtree(id);
+        for (ComponentInstance component : installed) {
+            component.setStatus(ComponentStatus.REMOVED);
+            component.setCurrentPosition(null);
+        }
+        componentInstanceRepository.saveAll(installed);
         assetRepository.deleteById(id);
     }
 
@@ -183,14 +195,13 @@ public class AssetService {
     }
 
     private void stopAssetDowntime(Asset asset) {
-        Collection<AssetDowntime> assetDowntimes = assetDowntimeService.findByAsset(asset.getId());
-        Optional<AssetDowntime> optionalRunningDowntime =
-                assetDowntimes.stream().filter(downtime -> downtime.getDuration() == 0).findFirst();
-
-        if (optionalRunningDowntime.isPresent()) {
-            AssetDowntime runningDowntime = optionalRunningDowntime.get();
-            runningDowntime.setDuration(Helper.getDateDiff(runningDowntime.getStartsOn(), new Date(),
-                    TimeUnit.SECONDS));
+        // Close every running downtime, not just the first: one left open reads
+        // as a machine that has been down ever since, and wrecks MTTR.
+        for (AssetDowntime runningDowntime : runningDowntimes(asset.getId())) {
+            // A duration of 0 is what marks a downtime as still running, so a
+            // sub-second one is recorded as one second rather than left open.
+            runningDowntime.setDuration(Math.max(1, Helper.getDateDiff(runningDowntime.getStartsOn(), new Date(),
+                    TimeUnit.SECONDS)));
             assetDowntimeService.save(runningDowntime);
         }
 
@@ -235,7 +246,18 @@ public class AssetService {
 
     }
 
+    private List<AssetDowntime> runningDowntimes(Long assetId) {
+        return assetDowntimeService.findByAsset(assetId).stream()
+                .filter(downtime -> downtime.getDuration() == 0)
+                .collect(Collectors.toList());
+    }
+
     private void createAssetDowntime(Asset asset, Date startsOn, Company company) {
+        // Already down — a second breakdown work order on the same machine, or
+        // a parent taken down by a sibling — is one outage, not two.
+        if (!runningDowntimes(asset.getId()).isEmpty()) {
+            return;
+        }
         AssetDowntime downtime = AssetDowntime.builder()
                 .startsOn(startsOn)
                 .asset(asset)

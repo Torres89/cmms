@@ -1192,7 +1192,12 @@ export default function WorkOrderDetails(props: WorkOrderDetailsProps) {
                             selectedParts.map((part) => part.id)
                           )
                         ).catch((error) =>
-                          showSnackBar(t('not_enough_part'), 'error')
+                          // Say what the server said — out of stock is only
+                          // one of the ways adding a part can fail.
+                          showSnackBar(
+                            getErrorMessage(error, t('could_not_add_parts')),
+                            'error'
+                          )
                         );
                       }}
                     />
@@ -1413,6 +1418,7 @@ export default function WorkOrderDetails(props: WorkOrderDetailsProps) {
           open={openFailureCapture}
           workOrderId={workOrder.id}
           assetId={workOrder.asset.id}
+          fromPreventiveMaintenance={!!workOrder.parentPreventiveMaintenance}
           onClose={() => setOpenFailureCapture(false)}
         />
       )}

@@ -65,7 +65,8 @@ public class UserController {
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.PEOPLE_AND_TEAMS)) {
             int companyUsersCount =
                     (int) userService.findByCompany(user.getCompany().getId()).stream().filter(user1 -> user1.isEnabled() && user1.isEnabledInSubscriptionAndPaid()).count();
-            Optional<Role> optionalRole = roleService.findById(invitation.getRole().getId());
+            Optional<Role> optionalRole = roleService.findById(invitation.getRole().getId())
+                    .filter(role -> RoleType.ROLE_CLIENT.equals(role.getRoleType()));
             if (optionalRole.isPresent() && optionalRole.get().belongsToCompany(user.getCompany())) {
                 if (companyUsersCount + invitation.getEmails().size() <= user.getCompany().getSubscription().getUsersCount() || !optionalRole.get().isPaid()) {
                     invitation.getEmails().forEach(email ->
@@ -144,7 +145,8 @@ public class UserController {
                                      @RequestParam("role") Long roleId,
                                      @Parameter(hidden = true) @CurrentUser OwnUser requester) {
         Optional<OwnUser> optionalUserToPatch = userService.findByIdAndCompany(id, requester.getCompany().getId());
-        Optional<Role> optionalRole = roleService.findById(roleId);
+        Optional<Role> optionalRole = roleService.findById(roleId)
+                .filter(role -> RoleType.ROLE_CLIENT.equals(role.getRoleType()));
 
         if (optionalUserToPatch.isPresent() && optionalRole.isPresent() && optionalRole.get().belongsToCompany(requester.getCompany())) {
             OwnUser userToPatch = optionalUserToPatch.get();

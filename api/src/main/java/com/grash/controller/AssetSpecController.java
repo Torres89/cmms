@@ -1,5 +1,8 @@
 package com.grash.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grash.dto.SuccessResponse;
 import com.grash.exception.CustomException;
 import com.grash.model.Asset;
@@ -35,6 +38,7 @@ public class AssetSpecController {
     private final AssetSpecService assetSpecService;
     private final AssetService assetService;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping("")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
@@ -55,16 +59,17 @@ public class AssetSpecController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public AssetSpec patch(@PathVariable("id") Long id, @RequestBody AssetSpec patch, HttpServletRequest req) {
+    public AssetSpec patch(@PathVariable("id") Long id, @RequestBody JsonNode body, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         requireEditPermission(user);
         AssetSpec saved = require(id, user);
+        AssetSpec patch = readPatch(body);
         if (patch.getSpecKey() != null) saved.setSpecKey(patch.getSpecKey());
         if (patch.getSpecGroup() != null) saved.setSpecGroup(patch.getSpecGroup());
         if (patch.getLabel() != null) saved.setLabel(patch.getLabel());
         if (patch.getUnit() != null) saved.setUnit(patch.getUnit());
-        saved.setValueText(patch.getValueText());
-        saved.setValueNum(patch.getValueNum());
+        if (body.has("valueText")) saved.setValueText(patch.getValueText());
+        if (body.has("valueNum")) saved.setValueNum(patch.getValueNum());
         // A person editing a value is a person vouching for it.
         saved.setVerifiedBy(user);
         saved.setVerifiedAt(new java.util.Date());
@@ -124,7 +129,7 @@ public class AssetSpecController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireEditPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         assetSpecService.delete(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -147,10 +152,35 @@ public class AssetSpecController {
         return asset.orElseThrow(() -> new CustomException("Asset not found", HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Deleting asset documentation takes the role's delete permission for
+     * assets (or owning the company), not the create permission technicians
+     * have: enough to add and correct a spec, not to destroy it.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
     private void requireEditPermission(OwnUser user) {
         if (!user.getRole().getEditOtherPermissions().contains(PermissionEntity.ASSETS)
                 && !user.getRole().getCreatePermissions().contains(PermissionEntity.ASSETS)) {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * A PATCH changes the fields it names and nothing else. Binding straight to
+     * the entity cannot tell an omitted field from a null or false one, so a
+     * client that sent only a label used to wipe the value beside it.
+     */
+    private AssetSpec readPatch(JsonNode body) {
+        try {
+            return objectMapper.treeToValue(body, AssetSpec.class);
+        } catch (JsonProcessingException e) {
+            throw new CustomException("Invalid body: " + e.getOriginalMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

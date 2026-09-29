@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 import java.io.InputStream;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +50,18 @@ public class AssetPackService {
     private final AssetBomLineRepository assetBomLineRepository;
     private final PartRepository partRepository;
     private final ReadingRepository readingRepository;
+    private final CompanyAssetPackRepository companyAssetPackRepository;
 
+    /** Keys a company pack may use: safe in a URL path and in equipmentClass. */
+    private static final Pattern PACK_KEY = Pattern.compile("[A-Za-z0-9_.-]{1,128}");
+
+    /**
+     * Shipped packs, loaded once from the classpath and never written after
+     * startup. They are the same for every tenant. Packs a customer registers
+     * are stored per company in {@code company_asset_pack}, never here, so one
+     * tenant can neither see nor replace another tenant's packs, nor replace a
+     * shipped one for everyone.
+     */
     private final Map<String, AssetPackDTO> packs = new LinkedHashMap<>();
 
     @PostConstruct
@@ -72,26 +84,90 @@ public class AssetPackService {
         }
     }
 
-    public Collection<AssetPackDTO> findAll() {
-        return packs.values();
-    }
-
-    public Optional<AssetPackDTO> findByKey(String key) {
-        return Optional.ofNullable(packs.get(key));
+    /**
+     * The packs one company can use: every shipped pack, then its own.
+     */
+    public Collection<AssetPackDTO> findAll(Long companyId) {
+        List<AssetPackDTO> result = new ArrayList<>(packs.values());
+        for (CompanyAssetPack stored : companyAssetPackRepository.findByCompanyIdOrderByPackKeyAsc(companyId)) {
+            // A shipped key always wins; register() refuses to create such a
+            // row, so this only guards rows that predate a newly shipped pack.
+            if (packs.containsKey(stored.getPackKey())) continue;
+            parse(stored).ifPresent(result::add);
+        }
+        return result;
     }
 
     /**
-     * Register a pack supplied by a customer at runtime.
+     * Look a pack up for one company: a shipped pack, or one that company
+     * registered. Another company's pack is never returned.
+     */
+    public Optional<AssetPackDTO> findByKey(String key, Long companyId) {
+        if (key == null) return Optional.empty();
+        AssetPackDTO shipped = packs.get(key);
+        if (shipped != null) return Optional.of(shipped);
+        if (companyId == null) return Optional.empty();
+        return companyAssetPackRepository.findByCompanyIdAndPackKey(companyId, key).flatMap(this::parse);
+    }
+
+    public boolean isShipped(String key) {
+        return key != null && packs.containsKey(key);
+    }
+
+    /**
+     * Register a pack supplied by a customer at runtime, for that customer only.
      * <p>
      * Deliberately possible without a deploy — a customer with an unusual
-     * machine gets a JSON file the same day, not a release.
+     * machine gets a JSON file the same day, not a release. Registering the
+     * same key again replaces that company's own pack; a shipped key cannot be
+     * reused, because instantiation resolves shipped packs first and a
+     * silently ignored pack is worse than a refused one.
      */
-    public AssetPackDTO register(AssetPackDTO pack) {
-        if (pack.getKey() == null || pack.getKey().isBlank()) {
+    @Transactional
+    public AssetPackDTO register(AssetPackDTO pack, Long companyId) {
+        if (pack == null || pack.getKey() == null || pack.getKey().isBlank()) {
             throw new CustomException("A pack needs a key", HttpStatus.BAD_REQUEST);
         }
-        packs.put(pack.getKey(), pack);
+        if (companyId == null) {
+            throw new CustomException("A pack must belong to a company", HttpStatus.BAD_REQUEST);
+        }
+        String key = pack.getKey().trim();
+        if (!PACK_KEY.matcher(key).matches()) {
+            throw new CustomException("A pack key may only contain letters, digits, '_', '-' and '.', "
+                    + "up to 128 characters", HttpStatus.BAD_REQUEST);
+        }
+        if (pack.getVersion() != null && pack.getVersion().length() > 64) {
+            throw new CustomException("A pack version may be at most 64 characters", HttpStatus.BAD_REQUEST);
+        }
+        if (packs.containsKey(key)) {
+            throw new CustomException("'" + key + "' is a shipped pack and cannot be replaced; "
+                    + "register it under a different key", HttpStatus.CONFLICT);
+        }
+        pack.setKey(key);
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(pack);
+        } catch (Exception e) {
+            throw new CustomException("The pack could not be stored: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        CompanyAssetPack stored = companyAssetPackRepository.findByCompanyIdAndPackKey(companyId, key)
+                .orElseGet(CompanyAssetPack::new);
+        stored.setCompanyId(companyId);
+        stored.setPackKey(key);
+        stored.setVersion(pack.getVersion());
+        stored.setPackJson(json);
+        companyAssetPackRepository.save(stored);
         return pack;
+    }
+
+    private Optional<AssetPackDTO> parse(CompanyAssetPack stored) {
+        try {
+            return Optional.of(objectMapper.readValue(stored.getPackJson(), AssetPackDTO.class));
+        } catch (Exception e) {
+            log.warn("Skipping stored pack {} of company {}: {}", stored.getPackKey(), stored.getCompanyId(),
+                    e.getMessage());
+            return Optional.empty();
+        }
     }
 
     /**
@@ -102,9 +178,9 @@ public class AssetPackService {
      */
     @Transactional
     public PackInstantiationResultDTO instantiate(String key, Asset asset, OwnUser user, boolean dryRun) {
-        AssetPackDTO pack = findByKey(key)
-                .orElseThrow(() -> new CustomException("Unknown pack: " + key, HttpStatus.NOT_FOUND));
         Company company = asset.getCompany();
+        AssetPackDTO pack = findByKey(key, company.getId())
+                .orElseThrow(() -> new CustomException("Unknown pack: " + key, HttpStatus.NOT_FOUND));
         PackInstantiationResultDTO result = new PackInstantiationResultDTO();
         result.setPackKey(pack.getKey());
         result.setPackVersion(pack.getVersion());

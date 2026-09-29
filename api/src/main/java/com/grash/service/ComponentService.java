@@ -341,8 +341,9 @@ public class ComponentService {
                         meter.getId(), meter.getName(), kind, meter.getAsset().getId());
                 return;
             }
-            double delta = deltaSincePreviousReading(reading, meter.getId());
-            if (delta <= 0) {
+            boolean firstReading = !hasPreviousReading(reading, meter.getId());
+            double meterDelta = deltaSincePreviousReading(reading, meter.getId());
+            if (!firstReading && meterDelta <= 0) {
                 log.debug("Reading {} on meter {} is not an increase; nothing to roll",
                         reading.getId(), meter.getId());
                 return;
@@ -350,8 +351,14 @@ public class ComponentService {
             List<ComponentInstance> installed =
                     componentInstanceRepository.findInstalledInSubtree(meter.getAsset().getId());
             log.debug("Rolling {} {} from meter {} into {} installed component(s)",
-                    delta, kind, meter.getId(), installed.size());
+                    meterDelta, kind, meter.getId(), installed.size());
             for (ComponentInstance component : installed) {
+                double delta = firstReading && kind == CounterKind.HOURS
+                        ? usageSinceInstall(component, reading.getValue())
+                        : meterDelta;
+                if (delta <= 0) {
+                    continue;
+                }
                 if (kind == CounterKind.HOURS) {
                     component.setTotalHours(nz(component.getTotalHours()) + delta);
                     component.setHoursSinceOverhaul(nz(component.getHoursSinceOverhaul()) + delta);
@@ -369,16 +376,52 @@ public class ComponentService {
     /**
      * Meters are cumulative counters, so the usage to add is the increase since
      * the previous reading, not the reading itself.
+     * <p>
+     * "Previous" is the chronologically latest other reading, not the highest
+     * one: after 1000, 1200 and a correction to 1100, the next reading of 1150
+     * is 50 hours of use, not zero. With no previous reading at all the delta is
+     * zero — the first reading on a meter is a baseline, and treating it as
+     * usage would age a spindle fitted last week by the machine's whole life.
+     * A reading below the previous one (a correction, a replaced counter)
+     * credits nothing, and simply becomes the baseline for the next.
      */
-    private double deltaSincePreviousReading(Reading reading, Long meterId) {
-        Collection<Reading> readings = readingRepository.findByMeter_Id(meterId);
-        double previous = readings.stream()
-                .filter(r -> !r.getId().equals(reading.getId()))
-                .filter(r -> r.getValue() <= reading.getValue())
-                .mapToDouble(Reading::getValue)
-                .max()
+    double deltaSincePreviousReading(Reading reading, Long meterId) {
+        Comparator<Reading> chronological = Comparator
+                .comparing(Reading::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(Reading::getId, Comparator.nullsFirst(Comparator.naturalOrder()));
+        Optional<Reading> previous = readingRepository.findByMeter_Id(meterId).stream()
+                .filter(r -> !Objects.equals(r.getId(), reading.getId()))
+                .filter(r -> chronological.compare(r, reading) < 0)
+                .max(chronological);
+        if (previous.isEmpty()) {
+            return 0d;
+        }
+        return Math.max(0d, reading.getValue() - previous.get().getValue());
+    }
+
+    private boolean hasPreviousReading(Reading reading, Long meterId) {
+        return readingRepository.findByMeter_Id(meterId).stream()
+                .anyMatch(r -> !Objects.equals(r.getId(), reading.getId())
+                        && Comparator.comparing(Reading::getCreatedAt,
+                                Comparator.nullsFirst(Comparator.<Date>naturalOrder()))
+                        .thenComparing(Reading::getId, Comparator.nullsFirst(Comparator.<Long>naturalOrder()))
+                        .compare(r, reading) < 0);
+    }
+
+    /**
+     * On a meter's first reading there is no previous reading to diff against,
+     * but a component installed with a meter value has its own baseline: fitted
+     * at 5,000 h and first read at 5,010 h is 10 h of use, not zero and not
+     * 5,010.
+     */
+    double usageSinceInstall(ComponentInstance component, double readingValue) {
+        return componentEventRepository
+                .findFirstByComponent_IdAndTypeOrderByOccurredAtDesc(component.getId(),
+                        ComponentEventType.INSTALLED)
+                .map(ComponentEvent::getPositionMeterValue)
+                .filter(installedAt -> installedAt >= 0 && readingValue > installedAt)
+                .map(installedAt -> readingValue - installedAt)
                 .orElse(0d);
-        return reading.getValue() - previous;
     }
 
     private enum CounterKind {HOURS, CYCLES, UNKNOWN}

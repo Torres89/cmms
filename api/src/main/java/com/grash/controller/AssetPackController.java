@@ -22,6 +22,9 @@ import java.util.Collection;
 /**
  * Vertical packs — the customisation mechanism that keeps customers off code
  * branches.
+ * <p>
+ * Every caller sees the shipped packs plus the packs its own company
+ * registered, and nothing else.
  */
 @RestController
 @RequestMapping("/asset-templates")
@@ -35,14 +38,16 @@ public class AssetPackController {
 
     @GetMapping("")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public Collection<AssetPackDTO> list() {
-        return assetPackService.findAll();
+    public Collection<AssetPackDTO> list(HttpServletRequest req) {
+        OwnUser user = userService.whoami(req);
+        return assetPackService.findAll(user.getCompany().getId());
     }
 
     @GetMapping("/{key}")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public AssetPackDTO get(@PathVariable("key") String key) {
-        return assetPackService.findByKey(key)
+    public AssetPackDTO get(@PathVariable("key") String key, HttpServletRequest req) {
+        OwnUser user = userService.whoami(req);
+        return assetPackService.findByKey(key, user.getCompany().getId())
                 .orElseThrow(() -> new CustomException("Unknown pack: " + key, HttpStatus.NOT_FOUND));
     }
 
@@ -66,23 +71,35 @@ public class AssetPackController {
     }
 
     /**
-     * Register a customer-specific pack at runtime.
+     * Register a customer-specific pack at runtime, for the caller's company.
      * <p>
      * The point of this endpoint is that a customer who wants different PM
      * templates gets a JSON file the same day, and nobody has to maintain a
-     * branch for them.
+     * branch for them. It is stored against the caller's company, survives a
+     * restart, and cannot reuse a shipped pack's key (409).
      */
     @PostMapping("")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public AssetPackDTO register(@Valid @RequestBody AssetPackDTO pack, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireCommissioningPermission(user);
-        return assetPackService.register(pack);
+        requireSettingsPermission(user);
+        return assetPackService.register(pack, user.getCompany().getId());
     }
 
     private void requireCommissioningPermission(OwnUser user) {
         if (!user.isOwnsCompany()
                 && !user.getRole().getCreatePermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * Defining what a class of machine looks like for the whole company is an
+     * administrator's job, not a technician's.
+     */
+    private void requireSettingsPermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getViewPermissions().contains(PermissionEntity.SETTINGS)) {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         }
     }
