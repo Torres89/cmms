@@ -196,4 +196,6 @@
              relativeToChangelogFile="true"/>
     <include file="changelog/2026_08_16_1786000007_asset_tabs_crud.xml"
              relativeToChangelogFile="true"/>
+    <include file="changelog/2026_09_28_1790553600_asset_pack.xml"
+             relativeToChangelogFile="true"/>
 </databaseChangeLog>
