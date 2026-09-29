@@ -55,7 +55,8 @@ public class CostCategoryController {
     public CostCategory getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         if (user.getRole().getViewPermissions().contains(PermissionEntity.CATEGORIES)) {
-            Optional<CostCategory> costCategoryOptional = costCategoryService.findById(id);
+            Optional<CostCategory> costCategoryOptional = costCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
             if (costCategoryOptional.isPresent()) {
                 CostCategory costCategory = costCategoryOptional.get();
                 return costCategoryService.findById(id).get();
@@ -80,13 +81,11 @@ public class CostCategoryController {
     public CostCategory patch(@Valid @RequestBody CategoryPatchDTO costCategory, @PathVariable("id") Long id,
                               HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
+        Optional<CostCategory> optionalCostCategory = costCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES)) {
-            if (costCategoryService.findById(id).isPresent()) {
-                CostCategory savedCostCategory = costCategoryService.findById(id).get();
-                if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES) &&
-                        user.getRole().belongsOnlyToCompany(savedCostCategory.getCompanySettings().getCompany())) {
-                    return costCategoryService.update(id, costCategory);
-                } else throw new CustomException("Forbidden", HttpStatus.FORBIDDEN);
+            if (optionalCostCategory.isPresent()) {
+                return costCategoryService.update(id, costCategory);
             } else throw new CustomException("CostCategory not found", HttpStatus.NOT_FOUND);
         } else throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
 
@@ -98,7 +97,8 @@ public class CostCategoryController {
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
 
-        Optional<CostCategory> optionalCostCategory = costCategoryService.findById(id);
+        Optional<CostCategory> optionalCostCategory = costCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (optionalCostCategory.isPresent()) {
             if (user.getCompany().getCompanySettings().getId().equals(optionalCostCategory.get().getCompanySettings().getId())
                     &&

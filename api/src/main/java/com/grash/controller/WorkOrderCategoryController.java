@@ -50,7 +50,8 @@ public class WorkOrderCategoryController {
 
     public WorkOrderCategory getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        Optional<WorkOrderCategory> optionalWorkOrderCategory = workOrderCategoryService.findById(id);
+        Optional<WorkOrderCategory> optionalWorkOrderCategory = workOrderCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getViewPermissions().contains(PermissionEntity.CATEGORIES)) {
             if (optionalWorkOrderCategory.isPresent()) {
                 WorkOrderCategory savedWorkOrderCategory = optionalWorkOrderCategory.get();
@@ -76,7 +77,8 @@ public class WorkOrderCategoryController {
     public WorkOrderCategory patch(@Valid @RequestBody CategoryPatchDTO categoryPatchDTO, @PathVariable("id") Long id,
                                    HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        Optional<WorkOrderCategory> optionalWorkOrderCategory = workOrderCategoryService.findById(id);
+        Optional<WorkOrderCategory> optionalWorkOrderCategory = workOrderCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES)) {
 
             if (optionalWorkOrderCategory.isPresent()) {
@@ -93,7 +95,8 @@ public class WorkOrderCategoryController {
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
 
-        Optional<WorkOrderCategory> optionalWorkOrderCategory = workOrderCategoryService.findById(id);
+        Optional<WorkOrderCategory> optionalWorkOrderCategory = workOrderCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (optionalWorkOrderCategory.isPresent()) {
             WorkOrderCategory savedWorkOrderCategory = optionalWorkOrderCategory.get();
             if (savedWorkOrderCategory.getCreatedBy().equals(user.getId()) || user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.CATEGORIES)) {

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!--
+      Customer-registered vertical packs.
+
+      Packs registered through POST /asset-templates used to live in one
+      in-memory map shared by every tenant: any company could overwrite a
+      shipped pack for everyone, and all of them vanished on restart. They are
+      now rows scoped to the company that registered them. Shipped packs stay
+      on the classpath and are never stored here; a company pack may not reuse
+      a shipped key.
+    -->
+    <changeSet id="1790553600-1" author="machine-specialist-platform">
+        <createTable tableName="company_asset_pack">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pack_key" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="varchar(64)"/>
+            <column name="pack_json" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="company_asset_pack" baseColumnNames="company_id"
+                                 constraintName="fk_company_asset_pack_company"
+                                 referencedTableName="company" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="company_asset_pack" columnNames="company_id, pack_key"
+                             constraintName="uk_company_asset_pack_key"/>
+    </changeSet>
+
+</databaseChangeLog>

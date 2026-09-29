@@ -50,7 +50,8 @@ public class MeterCategoryController {
     public MeterCategory getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         if (user.getRole().getViewPermissions().contains(PermissionEntity.CATEGORIES)) {
-            Optional<MeterCategory> optionalMeterCategory = meterCategoryService.findById(id);
+            Optional<MeterCategory> optionalMeterCategory = meterCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
             if (optionalMeterCategory.isPresent()) {
                 MeterCategory savedMeterCategory = optionalMeterCategory.get();
                 return savedMeterCategory;
@@ -76,7 +77,8 @@ public class MeterCategoryController {
                                @PathVariable("id") Long id,
                                HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        Optional<MeterCategory> optionalMeterCategory = meterCategoryService.findById(id);
+        Optional<MeterCategory> optionalMeterCategory = meterCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES)) {
 
             if (optionalMeterCategory.isPresent()) {
@@ -93,7 +95,8 @@ public class MeterCategoryController {
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
 
-        Optional<MeterCategory> optionalMeterCategory = meterCategoryService.findById(id);
+        Optional<MeterCategory> optionalMeterCategory = meterCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (optionalMeterCategory.isPresent()) {
             MeterCategory savedMeterCategory = optionalMeterCategory.get();
             if (savedMeterCategory.getCreatedBy().equals(user.getId()) || user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.CATEGORIES)) {

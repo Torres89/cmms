@@ -50,7 +50,8 @@ public class TimeCategoryController {
     public TimeCategory getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         if (user.getRole().getViewPermissions().contains(PermissionEntity.CATEGORIES)) {
-            Optional<TimeCategory> optionalTimeCategory = timeCategoryService.findById(id);
+            Optional<TimeCategory> optionalTimeCategory = timeCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
             if (optionalTimeCategory.isPresent()) {
                 TimeCategory savedTimeCategory = optionalTimeCategory.get();
                 return savedTimeCategory;
@@ -75,7 +76,8 @@ public class TimeCategoryController {
     public TimeCategory patch(@Valid @RequestBody CategoryPatchDTO timeCategory, @PathVariable("id") Long id,
                               HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        Optional<TimeCategory> optionalTimeCategory = timeCategoryService.findById(id);
+        Optional<TimeCategory> optionalTimeCategory = timeCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES)) {
             if (optionalTimeCategory.isPresent()) {
                 TimeCategory savedTimeCategory = optionalTimeCategory.get();
@@ -91,7 +93,8 @@ public class TimeCategoryController {
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
 
-        Optional<TimeCategory> optionalTimeCategory = timeCategoryService.findById(id);
+        Optional<TimeCategory> optionalTimeCategory = timeCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (optionalTimeCategory.isPresent()) {
             TimeCategory savedTimeCategory = optionalTimeCategory.get();
             if (savedTimeCategory.getCreatedBy() == null || savedTimeCategory.getCreatedBy().equals(user.getId()) || user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.CATEGORIES)) {

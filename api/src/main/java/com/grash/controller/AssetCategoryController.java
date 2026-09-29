@@ -50,7 +50,8 @@ public class AssetCategoryController {
     public AssetCategory getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         if (user.getRole().getViewPermissions().contains(PermissionEntity.CATEGORIES)) {
-            Optional<AssetCategory> optionalAssetCategory = assetCategoryService.findById(id);
+            Optional<AssetCategory> optionalAssetCategory = assetCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
             if (optionalAssetCategory.isPresent()) {
                 return assetCategoryService.findById(id).get();
             } else throw new CustomException("Not found", HttpStatus.NOT_FOUND);
@@ -73,7 +74,8 @@ public class AssetCategoryController {
                                @PathVariable("id") Long id,
                                HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        Optional<AssetCategory> optionalAssetCategory = assetCategoryService.findById(id);
+        Optional<AssetCategory> optionalAssetCategory = assetCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (user.getRole().getCreatePermissions().contains(PermissionEntity.CATEGORIES)) {
             if (optionalAssetCategory.isPresent()) {
                 return assetCategoryService.update(id, assetCategory);
@@ -88,7 +90,8 @@ public class AssetCategoryController {
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
 
-        Optional<AssetCategory> optionalAssetCategory = assetCategoryService.findById(id);
+        Optional<AssetCategory> optionalAssetCategory = assetCategoryService.findById(id)
+                .filter(category -> CategoryAccess.isAccessible(category, user));
         if (optionalAssetCategory.isPresent()) {
             if (optionalAssetCategory.get().getCreatedBy().equals(user.getId()) || user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.CATEGORIES)) {
                 assetCategoryService.delete(id);

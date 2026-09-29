@@ -9,6 +9,7 @@ import com.grash.model.OwnUser;
 import com.grash.model.Vendor;
 import com.grash.model.WorkOrder;
 import com.grash.model.enums.PermissionEntity;
+import com.grash.service.AssetService;
 import com.grash.service.ComponentService;
 import com.grash.service.UserService;
 import com.grash.service.VendorService;
@@ -44,6 +45,7 @@ public class ComponentController {
     private final UserService userService;
     private final WorkOrderService workOrderService;
     private final VendorService vendorService;
+    private final AssetService assetService;
 
     @GetMapping("")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
@@ -71,7 +73,10 @@ public class ComponentController {
      */
     @GetMapping("/position/{assetId}/history")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public List<ComponentEvent> positionHistory(@PathVariable("assetId") Long assetId) {
+    public List<ComponentEvent> positionHistory(@PathVariable("assetId") Long assetId, HttpServletRequest req) {
+        OwnUser user = userService.whoami(req);
+        assetService.findByIdAndCompany(assetId, user.getCompany().getId())
+                .orElseThrow(() -> new CustomException("Asset not found", HttpStatus.NOT_FOUND));
         return componentService.historyOfPosition(assetId);
     }
 
@@ -186,7 +191,7 @@ public class ComponentController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireEditPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         componentService.delete(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -207,6 +212,18 @@ public class ComponentController {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         }
         return component;
+    }
+
+    /**
+     * Deleting a component deletes its back-to-birth ledger, so it takes the
+     * role's delete permission for assets (or owning the company), not the
+     * create permission technicians have.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
     }
 
     private void requireEditPermission(OwnUser user) {

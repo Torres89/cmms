@@ -92,6 +92,8 @@ public class PreventiveMaintenanceController {
     PreventiveMaintenanceShowDTO create(@Valid @RequestBody PreventiveMaintenancePostDTO preventiveMaintenancePost,
                                         HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
+        if (!user.getRole().getCreatePermissions().contains(PermissionEntity.PREVENTIVE_MAINTENANCES))
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         PreventiveMaintenance preventiveMaintenance = preventiveMaintenanceMapper.toModel(preventiveMaintenancePost);
         preventiveMaintenance = preventiveMaintenanceService.create(preventiveMaintenance, user);
 
@@ -122,9 +124,12 @@ public class PreventiveMaintenanceController {
 
         if (optionalPreventiveMaintenance.isPresent()) {
             PreventiveMaintenance savedPreventiveMaintenance = optionalPreventiveMaintenance.get();
-            PreventiveMaintenance patchedPreventiveMaintenance = preventiveMaintenanceService.update(id,
-                    preventiveMaintenance, user);
-            return preventiveMaintenanceMapper.toShowDto(patchedPreventiveMaintenance);
+            if (user.getRole().getEditOtherPermissions().contains(PermissionEntity.PREVENTIVE_MAINTENANCES)
+                    || user.getId().equals(savedPreventiveMaintenance.getCreatedBy())) {
+                PreventiveMaintenance patchedPreventiveMaintenance = preventiveMaintenanceService.update(id,
+                        preventiveMaintenance, user);
+                return preventiveMaintenanceMapper.toShowDto(patchedPreventiveMaintenance);
+            } else throw new CustomException("Forbidden", HttpStatus.FORBIDDEN);
         } else throw new CustomException("PreventiveMaintenance not found", HttpStatus.NOT_FOUND);
     }
 
@@ -136,10 +141,14 @@ public class PreventiveMaintenanceController {
 
         Optional<PreventiveMaintenance> optionalPreventiveMaintenance = preventiveMaintenanceService.findById(id);
         if (optionalPreventiveMaintenance.isPresent()) {
-            scheduleService.stopScheduleJobs(optionalPreventiveMaintenance.get().getSchedule().getId());
-            preventiveMaintenanceService.delete(id);
-            return new ResponseEntity(new SuccessResponse(true, "Deleted successfully"),
-                    HttpStatus.OK);
+            PreventiveMaintenance savedPreventiveMaintenance = optionalPreventiveMaintenance.get();
+            if (user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.PREVENTIVE_MAINTENANCES)
+                    || user.getId().equals(savedPreventiveMaintenance.getCreatedBy())) {
+                scheduleService.stopScheduleJobs(savedPreventiveMaintenance.getSchedule().getId());
+                preventiveMaintenanceService.delete(id);
+                return new ResponseEntity(new SuccessResponse(true, "Deleted successfully"),
+                        HttpStatus.OK);
+            } else throw new CustomException("Forbidden", HttpStatus.FORBIDDEN);
         } else throw new CustomException("PreventiveMaintenance not found", HttpStatus.NOT_FOUND);
     }
 
