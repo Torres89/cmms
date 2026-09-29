@@ -2039,7 +2039,24 @@ const esJSON = {
   update_frequency_days: 'Frecuencia de lectura esperada (dias)',
   nothing_to_show_yet: 'Aun no hay nada registrado',
   open_work_orders: 'Abiertas',
-  could_not_load_meters: 'No se pudieron cargar los medidores'
+  could_not_load_meters: 'No se pudieron cargar los medidores',
+  could_not_add_parts: 'No se pudieron añadir los repuestos',
+  pm_interval_every: 'Cada {{intervals}}',
+  pm_interval_or: 'o',
+  pm_interval_and: 'y',
+  pm_interval_whichever_first: 'lo que ocurra primero',
+  pm_interval_all_must_elapse: 'cuando se hayan cumplido todos',
+  pm_interval_due: 'Vencido',
+  pm_interval_progress: '{{elapsed}} de {{total}} {{unit}}',
+  pm_interval_not_started: 'Empieza a contar con la próxima lectura',
+  pm_interval_generation_note: 'Se crea una orden de trabajo automáticamente cuando vence.',
+  interval_unit_h: 'h',
+  interval_unit_hours: 'horas',
+  interval_unit_days: 'días',
+  interval_unit_weeks: 'semanas',
+  interval_unit_months: 'meses',
+  interval_unit_years: 'años',
+  interval_unit_cycles: 'ciclos'
 };
 
 export default esJSON;

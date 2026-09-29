@@ -187,6 +187,7 @@ public class MaintenanceIntervalService {
         counter.setIntervalId(interval.getId());
         counter.setBasis(interval.getBasis() == null ? null : interval.getBasis().name());
         counter.setIntervalValue(interval.getIntervalValue());
+        counter.setIntervalUnit(interval.getUnit());
         counter.setUnit(interval.getUnit());
         counter.setWarnAtPercent(interval.getWarnAtPercent());
 
@@ -198,6 +199,7 @@ public class MaintenanceIntervalService {
             Meter meter = interval.getMeter();
             counter.setLabel(meter.getName());
             if (counter.getUnit() == null) counter.setUnit(meter.getUnit());
+            if (counter.getIntervalUnit() == null) counter.setIntervalUnit(meter.getUnit());
             List<Reading> readings = chronological(meter.getId());
             Optional<Double> baseline = meterBaseline(interval, readings);
             if (baseline.isEmpty()) {

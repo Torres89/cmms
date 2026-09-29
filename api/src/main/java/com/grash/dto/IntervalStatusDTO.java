@@ -43,6 +43,12 @@ public class IntervalStatusDTO {
         private String basis;
         private String label;
         private Double intervalValue;
+        /**
+         * The unit {@link #intervalValue} is written in ("h", "months"), for
+         * describing the interval. {@link #unit} is the unit of elapsed and
+         * remaining, which for a calendar interval is always days.
+         */
+        private String intervalUnit;
         private String unit;
         private Double elapsed;
         private Double percent;

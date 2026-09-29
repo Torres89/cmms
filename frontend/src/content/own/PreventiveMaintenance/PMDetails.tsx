@@ -36,6 +36,8 @@ import { supportedLanguages } from '../../../i18n/i18n';
 import i18n from 'i18next';
 import RecentWorkOrders from './RecentWorkOrders';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../utils/api';
+import IntervalTrigger, { IntervalStatus } from './IntervalTrigger';
 
 interface RequestDetailsProps {
   preventiveMaintenance: PreventiveMaintenance;
@@ -69,8 +71,25 @@ export default function PMDetails({
     setTab(newValue);
   };
 
+  const [intervalStatus, setIntervalStatus] = useState<IntervalStatus | null>(
+    null
+  );
+  // A PM with intervals runs off its counters, not its calendar schedule
+  // (which is retired and would read "every 1 day").
+  const intervalDriven = !!intervalStatus?.counters?.length;
+
   useEffect(() => {
     dispatch(getTasksByPreventiveMaintenance(preventiveMaintenance.id));
+  }, [preventiveMaintenance.id]);
+
+  useEffect(() => {
+    setIntervalStatus(null);
+    api
+      .get<IntervalStatus>(
+        `preventive-maintenances/${preventiveMaintenance.id}/status`
+      )
+      .then(setIntervalStatus)
+      .catch(() => setIntervalStatus(null));
   }, [preventiveMaintenance.id]);
 
   const BasicField = ({
@@ -147,7 +166,7 @@ export default function PMDetails({
       >
         <Box>
           <Typography variant="h2">{preventiveMaintenance?.name}</Typography>
-          {preventiveMaintenance?.schedule.disabled && (
+          {preventiveMaintenance?.schedule.disabled && !intervalDriven && (
             <Typography variant="h5">{t('paused')}</Typography>
           )}
         </Box>
@@ -184,23 +203,25 @@ export default function PMDetails({
               {t('trigger_details')}
             </Typography>
             <Grid container spacing={2}>
-              {preventiveMaintenance.schedule?.recurrenceBasedOn && (
-                <Grid item xs={12} lg={6}>
-                  <Typography
-                    variant="h6"
-                    sx={{ color: theme.colors.alpha.black[70] }}
-                  >
-                    {t('based_on')}
-                  </Typography>
-                  <Typography variant="h6">
-                    {preventiveMaintenance.schedule.recurrenceBasedOn ===
-                    'SCHEDULED_DATE'
-                      ? t('scheduled_date')
-                      : t('completed_on')}
-                  </Typography>
-                </Grid>
-              )}
-              {preventiveMaintenance.schedule?.startsOn && (
+              {intervalDriven && <IntervalTrigger status={intervalStatus} />}
+              {!intervalDriven &&
+                preventiveMaintenance.schedule?.recurrenceBasedOn && (
+                  <Grid item xs={12} lg={6}>
+                    <Typography
+                      variant="h6"
+                      sx={{ color: theme.colors.alpha.black[70] }}
+                    >
+                      {t('based_on')}
+                    </Typography>
+                    <Typography variant="h6">
+                      {preventiveMaintenance.schedule.recurrenceBasedOn ===
+                      'SCHEDULED_DATE'
+                        ? t('scheduled_date')
+                        : t('completed_on')}
+                    </Typography>
+                  </Grid>
+                )}
+              {!intervalDriven && preventiveMaintenance.schedule?.startsOn && (
                 <Grid item xs={12} lg={6}>
                   <Typography
                     variant="h6"
@@ -213,7 +234,7 @@ export default function PMDetails({
                   </Typography>
                 </Grid>
               )}
-              {preventiveMaintenance.schedule?.endsOn && (
+              {!intervalDriven && preventiveMaintenance.schedule?.endsOn && (
                 <Grid item xs={12} lg={6}>
                   <Typography
                     variant="h6"
@@ -226,7 +247,7 @@ export default function PMDetails({
                   </Typography>
                 </Grid>
               )}
-              {preventiveMaintenance.schedule.frequency && (
+              {!intervalDriven && !!preventiveMaintenance.schedule.frequency && (
                 <Grid item xs={12} lg={6}>
                   <Typography
                     variant="h6"
