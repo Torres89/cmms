@@ -124,7 +124,7 @@ public class DocumentController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireEditPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         documentService.delete(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -137,6 +137,18 @@ public class DocumentController {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         }
         return document;
+    }
+
+    /**
+     * Deleting a manual removes it and its index for everyone, so it takes the
+     * role's delete permission for files, not the create permission that
+     * requesters and technicians have.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.FILES)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
     }
 
     private void requireEditPermission(OwnUser user) {

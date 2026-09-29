@@ -75,7 +75,7 @@ public class SpecKeyCatalogController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireSettingsPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         specKeyCatalogRepository.deleteById(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -88,6 +88,17 @@ public class SpecKeyCatalogController {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         }
         return entry;
+    }
+
+    /**
+     * Deleting a catalogue entry takes the role's delete permission for assets
+     * (or owning the company), not the create permission technicians have.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
     }
 
     private void requireSettingsPermission(OwnUser user) {

@@ -77,7 +77,7 @@ public class AssetBomController {
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SuccessResponse> delete(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
-        requireEditPermission(user);
+        requireDeletePermission(user);
         require(id, user);
         assetBomService.delete(id);
         return ResponseEntity.ok(new SuccessResponse(true, "Deleted successfully"));
@@ -90,6 +90,18 @@ public class AssetBomController {
             throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
         }
         return line;
+    }
+
+    /**
+     * Deleting asset documentation takes the role's delete permission for
+     * assets (or owning the company), not the create permission technicians
+     * have.
+     */
+    private void requireDeletePermission(OwnUser user) {
+        if (!user.isOwnsCompany()
+                && !user.getRole().getDeleteOtherPermissions().contains(PermissionEntity.ASSETS)) {
+            throw new CustomException("Access denied", HttpStatus.FORBIDDEN);
+        }
     }
 
     private void requireEditPermission(OwnUser user) {

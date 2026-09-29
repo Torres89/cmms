@@ -52,7 +52,8 @@ public class ChecklistController {
     public Checklist getById(@PathVariable("id") Long id, HttpServletRequest req) {
         OwnUser user = userService.whoami(req);
         Optional<Checklist> optionalChecklist = checklistService.findById(id);
-        if (optionalChecklist.isPresent()) {
+        if (optionalChecklist.isPresent() && (user.getRole().getRoleType().equals(RoleType.ROLE_SUPER_ADMIN)
+                || belongsToCompany(optionalChecklist.get(), user))) {
             Checklist savedChecklist = optionalChecklist.get();
             return savedChecklist;
         } else throw new CustomException("Not found", HttpStatus.NOT_FOUND);
@@ -77,7 +78,7 @@ public class ChecklistController {
         OwnUser user = userService.whoami(req);
         Optional<Checklist> optionalChecklist = checklistService.findById(id);
 
-        if (optionalChecklist.isPresent()) {
+        if (optionalChecklist.isPresent() && belongsToCompany(optionalChecklist.get(), user)) {
             Checklist savedChecklist = optionalChecklist.get();
             if (user.getRole().getViewPermissions().contains(PermissionEntity.SETTINGS)) {
                 return checklistService.update(id, checklist, user.getCompany());
@@ -92,7 +93,7 @@ public class ChecklistController {
         OwnUser user = userService.whoami(req);
 
         Optional<Checklist> optionalChecklist = checklistService.findById(id);
-        if (optionalChecklist.isPresent()) {
+        if (optionalChecklist.isPresent() && belongsToCompany(optionalChecklist.get(), user)) {
             Checklist savedChecklist = optionalChecklist.get();
             if (user.getRole().getViewPermissions().contains(PermissionEntity.SETTINGS)) {
                 checklistService.delete(id);
@@ -100,6 +101,16 @@ public class ChecklistController {
                         HttpStatus.OK);
             } else throw new CustomException("Forbidden", HttpStatus.FORBIDDEN);
         } else throw new CustomException("Checklist not found", HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * {@link Checklist} is not a {@code CompanyAudit}; it belongs to a company
+     * through its company settings, so the tenant check is made here.
+     */
+    private boolean belongsToCompany(Checklist checklist, OwnUser user) {
+        return checklist.getCompanySettings() != null
+                && checklist.getCompanySettings().getId()
+                .equals(user.getCompany().getCompanySettings().getId());
     }
 
 }
