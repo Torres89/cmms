@@ -2,14 +2,9 @@ package com.grash.job;
 
 import com.grash.model.PreventiveMaintenance;
 import com.grash.model.Schedule;
-import com.grash.model.Task;
-import com.grash.model.WorkOrder;
-import com.grash.model.enums.RecurrenceType;
 import com.grash.repository.ScheduleRepository;
+import com.grash.service.PreventiveMaintenanceWorkOrderService;
 import com.grash.service.ScheduleService;
-import com.grash.service.TaskService;
-import com.grash.service.WorkOrderService;
-import com.grash.utils.Helper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
@@ -18,19 +13,14 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.Date;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class WorkOrderCreationJob extends QuartzJobBean {
 
     private final ScheduleRepository scheduleRepository;
-    private final WorkOrderService workOrderService;
-    private final TaskService taskService;
     private final ScheduleService scheduleService;
+    private final PreventiveMaintenanceWorkOrderService preventiveMaintenanceWorkOrderService;
 
     @Override
     @Transactional
@@ -43,24 +33,17 @@ public class WorkOrderCreationJob extends QuartzJobBean {
             return;
         }
         scheduleService.checkIfWeeklyShouldRun(schedule);
-        
+
         PreventiveMaintenance preventiveMaintenance = schedule.getPreventiveMaintenance();
 
-        WorkOrder workOrder = workOrderService.getWorkOrderFromWorkOrderBase(preventiveMaintenance);
-        Collection<Task> tasks = taskService.findByPreventiveMaintenance(preventiveMaintenance.getId());
-        workOrder.setParentPreventiveMaintenance(preventiveMaintenance);
-
-        if (schedule.getDueDateDelay() != null) {
-            workOrder.setDueDate(Helper.incrementDays(new Date(), schedule.getDueDateDelay()));
+        // A trigger that predates the PM getting intervals: its counters own it
+        // now, so retire the trigger instead of generating a daily work order.
+        if (scheduleService.isIntervalDriven(preventiveMaintenance)) {
+            scheduleService.retireForIntervals(schedule);
+            return;
         }
 
-        WorkOrder savedWorkOrder = workOrderService.create(workOrder, preventiveMaintenance.getCompany());
-
-        tasks.forEach(task -> {
-            Task copiedTask = new Task(task.getTaskBase(), savedWorkOrder, null, task.getValue());
-            copiedTask.setCompany(preventiveMaintenance.getCompany());
-            taskService.create(copiedTask);
-        });
+        preventiveMaintenanceWorkOrderService.generate(preventiveMaintenance);
 
 //        log.info("Generated Work Order for Schedule ID: {}", scheduleId);
     }

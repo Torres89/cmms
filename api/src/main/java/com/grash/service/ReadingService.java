@@ -9,6 +9,7 @@ import com.grash.model.Reading;
 import com.grash.model.enums.RoleType;
 import com.grash.repository.ReadingRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -19,18 +20,22 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReadingService {
     private final ReadingRepository readingRepository;
     private final ReadingMapper readingMapper;
     private final LicenseService licenseService;
     private MeterService meterService;
     private ComponentService componentService;
+    private IntervalMaintenanceService intervalMaintenanceService;
 
     @Autowired
-    public void setDeps(@Lazy MeterService meterService, @Lazy ComponentService componentService
+    public void setDeps(@Lazy MeterService meterService, @Lazy ComponentService componentService,
+                        @Lazy IntervalMaintenanceService intervalMaintenanceService
     ) {
         this.meterService = meterService;
         this.componentService = componentService;
+        this.intervalMaintenanceService = intervalMaintenanceService;
     }
 
     public Reading create(Reading reading) {
@@ -39,6 +44,15 @@ public class ReadingService {
         // are installed at or under this meter's asset. Without this, remaining
         // life on a spindle cartridge is a number nobody maintains.
         componentService.applyReading(saved);
+        // ...and may be the one that brings an hour-based PM due, which is when
+        // its work order should appear — not at the next calendar tick.
+        if (saved.getMeter() != null) {
+            try {
+                intervalMaintenanceService.onReading(saved.getMeter().getId());
+            } catch (Exception e) {
+                log.warn("Could not evaluate interval PMs for reading {}: {}", saved.getId(), e.getMessage());
+            }
+        }
         return saved;
     }
 

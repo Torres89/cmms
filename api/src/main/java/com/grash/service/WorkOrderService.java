@@ -60,6 +60,7 @@ public class WorkOrderService {
     private final MailServiceFactory mailServiceFactory;
     private final WorkOrderCategoryService workOrderCategoryService;
     private WorkflowService workflowService;
+    private MaintenanceIntervalService maintenanceIntervalService;
     private final MessageSource messageSource;
     private final CustomSequenceService customSequenceService;
 
@@ -68,9 +69,11 @@ public class WorkOrderService {
     private final LicenseService licenseService;
 
     @Autowired
-    public void setDeps(@Lazy WorkflowService workflowService
+    public void setDeps(@Lazy WorkflowService workflowService,
+                        @Lazy MaintenanceIntervalService maintenanceIntervalService
     ) {
         this.workflowService = workflowService;
+        this.maintenanceIntervalService = maintenanceIntervalService;
     }
 
     @Transactional
@@ -226,7 +229,26 @@ public class WorkOrderService {
     public WorkOrder saveAndFlush(WorkOrder workOrder) {
         WorkOrder updatedWorkOrder = workOrderRepository.saveAndFlush(workOrder);
         em.refresh(updatedWorkOrder);
+        recordPreventiveMaintenanceCompletion(updatedWorkOrder);
         return updatedWorkOrder;
+    }
+
+    /**
+     * A completed work order from an interval-driven PM restarts that PM's
+     * counters: last done now, at whatever the meter reads now. Without this
+     * the PM stays due forever and the next reading generates the same service
+     * again. Idempotent on the completion time, so saving the same completed
+     * work order twice is harmless.
+     */
+    private void recordPreventiveMaintenanceCompletion(WorkOrder workOrder) {
+        if (workOrder.getStatus() != Status.COMPLETE || workOrder.getCompletedOn() == null
+                || workOrder.getParentPreventiveMaintenance() == null) {
+            return;
+        }
+        Long pmId = workOrder.getParentPreventiveMaintenance().getId();
+        if (maintenanceIntervalService.isIntervalDriven(pmId)) {
+            maintenanceIntervalService.recordCompletion(pmId, workOrder.getCompletedOn());
+        }
     }
 
     public WorkOrder getWorkOrderFromWorkOrderBase(WorkOrderBase workOrderBase) {
