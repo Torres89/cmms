@@ -341,8 +341,9 @@ public class ComponentService {
                         meter.getId(), meter.getName(), kind, meter.getAsset().getId());
                 return;
             }
-            double delta = deltaSincePreviousReading(reading, meter.getId());
-            if (delta <= 0) {
+            boolean firstReading = !hasPreviousReading(reading, meter.getId());
+            double meterDelta = deltaSincePreviousReading(reading, meter.getId());
+            if (!firstReading && meterDelta <= 0) {
                 log.debug("Reading {} on meter {} is not an increase; nothing to roll",
                         reading.getId(), meter.getId());
                 return;
@@ -350,8 +351,14 @@ public class ComponentService {
             List<ComponentInstance> installed =
                     componentInstanceRepository.findInstalledInSubtree(meter.getAsset().getId());
             log.debug("Rolling {} {} from meter {} into {} installed component(s)",
-                    delta, kind, meter.getId(), installed.size());
+                    meterDelta, kind, meter.getId(), installed.size());
             for (ComponentInstance component : installed) {
+                double delta = firstReading && kind == CounterKind.HOURS
+                        ? usageSinceInstall(component, reading.getValue())
+                        : meterDelta;
+                if (delta <= 0) {
+                    continue;
+                }
                 if (kind == CounterKind.HOURS) {
                     component.setTotalHours(nz(component.getTotalHours()) + delta);
                     component.setHoursSinceOverhaul(nz(component.getHoursSinceOverhaul()) + delta);
@@ -390,6 +397,31 @@ public class ComponentService {
             return 0d;
         }
         return Math.max(0d, reading.getValue() - previous.get().getValue());
+    }
+
+    private boolean hasPreviousReading(Reading reading, Long meterId) {
+        return readingRepository.findByMeter_Id(meterId).stream()
+                .anyMatch(r -> !Objects.equals(r.getId(), reading.getId())
+                        && Comparator.comparing(Reading::getCreatedAt,
+                                Comparator.nullsFirst(Comparator.<Date>naturalOrder()))
+                        .thenComparing(Reading::getId, Comparator.nullsFirst(Comparator.<Long>naturalOrder()))
+                        .compare(r, reading) < 0);
+    }
+
+    /**
+     * On a meter's first reading there is no previous reading to diff against,
+     * but a component installed with a meter value has its own baseline: fitted
+     * at 5,000 h and first read at 5,010 h is 10 h of use, not zero and not
+     * 5,010.
+     */
+    double usageSinceInstall(ComponentInstance component, double readingValue) {
+        return componentEventRepository
+                .findFirstByComponent_IdAndTypeOrderByOccurredAtDesc(component.getId(),
+                        ComponentEventType.INSTALLED)
+                .map(ComponentEvent::getPositionMeterValue)
+                .filter(installedAt -> installedAt >= 0 && readingValue > installedAt)
+                .map(installedAt -> readingValue - installedAt)
+                .orElse(0d);
     }
 
     private enum CounterKind {HOURS, CYCLES, UNKNOWN}

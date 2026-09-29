@@ -160,6 +160,9 @@ public class RequestController {
         }
         if (optionalRequest.isPresent()) {
             Request savedRequest = optionalRequest.get();
+            if (savedRequest.isCancelled()) {
+                throw new CustomException("Request has been rejected", HttpStatus.NOT_ACCEPTABLE);
+            }
             if (savedRequest.getWorkOrder() != null) {
                 throw new CustomException("Request is already approved", HttpStatus.NOT_ACCEPTABLE);
             }

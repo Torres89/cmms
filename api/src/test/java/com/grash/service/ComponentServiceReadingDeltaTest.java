@@ -1,9 +1,11 @@
 package com.grash.service;
 
 import com.grash.model.Asset;
+import com.grash.model.ComponentEvent;
 import com.grash.model.ComponentInstance;
 import com.grash.model.Meter;
 import com.grash.model.Reading;
+import com.grash.model.enums.ComponentEventType;
 import com.grash.repository.ComponentEventRepository;
 import com.grash.repository.ComponentInstanceRepository;
 import com.grash.repository.MeterRepository;
@@ -112,11 +114,17 @@ class ComponentServiceReadingDeltaTest {
         when(meterRepository.findById(METER_ID)).thenReturn(Optional.of(meter));
         when(meterRepository.findByAsset_Id(3L)).thenReturn(List.of(meter));
         when(readingRepository.findByMeter_Id(METER_ID)).thenReturn(List.of(first));
+        ComponentInstance spindle = new ComponentInstance();
+        spindle.setId(11L);
+        spindle.setTotalHours(0d);
+        when(componentInstanceRepository.findInstalledInSubtree(3L)).thenReturn(List.of(spindle));
+        // Installed with no meter value: nothing to measure the first reading against.
+        when(componentEventRepository.findFirstByComponent_IdAndTypeOrderByOccurredAtDesc(11L,
+                ComponentEventType.INSTALLED)).thenReturn(Optional.empty());
 
         service.applyReading(first);
 
-        verify(componentInstanceRepository, never()).findInstalledInSubtree(any());
-        verify(componentInstanceRepository, never()).saveAll(any());
+        assertEquals(0d, spindle.getTotalHours());
     }
 
     @Test
@@ -142,5 +150,34 @@ class ComponentServiceReadingDeltaTest {
 
         assertEquals(40d, spindle.getTotalHours());
         assertEquals(40d, spindle.getHoursSinceOverhaul());
+    }
+
+    @Test
+    void firstReadingCreditsOnlyUsageSinceAnInstallWithAMeterValue() {
+        Asset machine = new Asset();
+        machine.setId(3L);
+        Meter meter = new Meter();
+        meter.setId(METER_ID);
+        meter.setUnit("h");
+        meter.setAsset(machine);
+        Reading first = reading(1, 5010);
+        first.setMeter(meter);
+        ComponentInstance spindle = new ComponentInstance();
+        spindle.setId(11L);
+        spindle.setTotalHours(0d);
+        ComponentEvent install = new ComponentEvent();
+        install.setPositionMeterValue(5000d);
+
+        when(meterRepository.findById(METER_ID)).thenReturn(Optional.of(meter));
+        when(meterRepository.findByAsset_Id(3L)).thenReturn(List.of(meter));
+        when(readingRepository.findByMeter_Id(METER_ID)).thenReturn(List.of(first));
+        when(componentInstanceRepository.findInstalledInSubtree(3L)).thenReturn(List.of(spindle));
+        when(componentEventRepository.findFirstByComponent_IdAndTypeOrderByOccurredAtDesc(11L,
+                ComponentEventType.INSTALLED)).thenReturn(Optional.of(install));
+
+        service.applyReading(first);
+
+        assertEquals(10d, spindle.getTotalHours());
+        assertEquals(10d, spindle.getHoursSinceOverhaul());
     }
 }

@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class VendorPatchDTO extends BasicInfos {
 
+    // The edit form sends it; without it here a rename returned 200 and changed nothing.
+    private String companyName;
+
     private String vendorType;
 
     private String description;

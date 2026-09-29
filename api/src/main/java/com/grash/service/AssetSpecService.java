@@ -191,6 +191,12 @@ public class AssetSpecService {
                 .findByEquipmentClassAndCompany_IdOrderByDisplayOrderAscSpecGroupAscSpecKeyAsc(
                         asset.getEquipmentClass(), asset.getCompany().getId());
         dto.setExpected(expected.size());
+        // Specs outside the catalogue are welcome but are not progress against
+        // it: counting them let a machine read "4 of 2 captured" while a
+        // catalogue key was still missing.
+        dto.setCaptured((int) expected.stream()
+                .filter(e -> capturedKeys.contains(e.getSpecKey()))
+                .count());
         dto.setRequiredExpected((int) expected.stream().filter(SpecKeyCatalog::isRequired).count());
         dto.setRequiredCaptured((int) expected.stream()
                 .filter(SpecKeyCatalog::isRequired)

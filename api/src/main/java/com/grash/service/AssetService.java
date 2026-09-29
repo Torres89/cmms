@@ -12,8 +12,10 @@ import com.grash.mapper.AssetMapper;
 import com.grash.model.*;
 import com.grash.model.enums.AssetLevel;
 import com.grash.model.enums.AssetStatus;
+import com.grash.model.enums.ComponentStatus;
 import com.grash.model.enums.NotificationType;
 import com.grash.repository.AssetRepository;
+import com.grash.repository.ComponentInstanceRepository;
 import com.grash.utils.Helper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,7 @@ import static com.grash.utils.Consts.usageBasedLicenseLimits;
 @RequiredArgsConstructor
 public class AssetService {
     private final AssetRepository assetRepository;
+    private final ComponentInstanceRepository componentInstanceRepository;
     private LocationService locationService;
     private final FileService fileService;
     private final AssetCategoryService assetCategoryService;
@@ -119,6 +122,15 @@ public class AssetService {
     }
 
     public void delete(Long id) {
+        // A serialized component outlives the machine it was fitted to. The
+        // position column is cleared by the cascade, but left alone the
+        // component would still read IN_SERVICE - installed nowhere.
+        List<ComponentInstance> installed = componentInstanceRepository.findInstalledInSubtree(id);
+        for (ComponentInstance component : installed) {
+            component.setStatus(ComponentStatus.REMOVED);
+            component.setCurrentPosition(null);
+        }
+        componentInstanceRepository.saveAll(installed);
         assetRepository.deleteById(id);
     }
 
