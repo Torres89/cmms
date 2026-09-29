@@ -90,6 +90,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_COMPANY_NAME: ${ADMIN_COMPANY_NAME:-Default Company}
+      OPERATOR_EMAILS: ${OPERATOR_EMAILS:-}
     volumes:
       - ./logo:/app/static/images
       - file_data:/data/files

@@ -35,8 +35,15 @@ const WorkflowsSettings = Loader(
 const UIConfigurationSettings = Loader(
   lazy(() => import('../content/own/Settings/UiConfiguration'))
 );
-const AiSettings = Loader(lazy(() => import('../content/own/Settings/AiSettings')));
-const Commissioning = Loader(lazy(() => import('../content/own/Commissioning')));
+const AiSettings = Loader(
+  lazy(() => import('../content/own/Settings/AiSettings'))
+);
+const Commissioning = Loader(
+  lazy(() => import('../content/own/Commissioning'))
+);
+const CustomerCompanies = Loader(
+  lazy(() => import('../content/own/CustomerCompanies'))
+);
 
 const UserProfile = Loader(lazy(() => import('../content/own/UserProfile')));
 const CompanyProfile = Loader(
@@ -251,6 +258,10 @@ const appRoutes = [
   {
     path: 'commissioning',
     element: <Commissioning />
+  },
+  {
+    path: 'operator/companies',
+    element: <CustomerCompanies />
   },
   {
     path: 'assets',

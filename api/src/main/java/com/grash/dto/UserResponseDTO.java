@@ -29,6 +29,9 @@ public class UserResponseDTO {
 
     private boolean ownsCompany;
 
+    // Named in OPERATOR_EMAILS: may create and list customer companies.
+    private boolean operator;
+
     private Long companyId;
 
     private Long companySettingsId;

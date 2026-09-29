@@ -2056,7 +2056,23 @@ const esJSON = {
   interval_unit_weeks: 'semanas',
   interval_unit_months: 'meses',
   interval_unit_years: 'años',
-  interval_unit_cycles: 'ciclos'
+  interval_unit_cycles: 'ciclos',
+  customer_companies: 'Empresas cliente',
+  customer_companies_description: 'Todas las empresas de este servicio. Crea una al poner en marcha un cliente nuevo.',
+  new_customer: 'Nuevo cliente',
+  new_customer_description: 'Crea la empresa y su primer administrador. Entrega la contraseña temporal en persona; puede cambiarla desde su perfil.',
+  customer_created: '{{name}} está lista.',
+  customer_created_handover: 'Inicia sesión como {{email}} con la contraseña temporal {{password}}. Es la única vez que se muestra.',
+  administrator: 'Administrador',
+  active_users: 'Usuarios activos',
+  demo: 'Demo',
+  employees_count: 'Empleados',
+  customer_administrator: 'Administrador del cliente',
+  temporary_password: 'Contraseña temporal',
+  temporary_password_help: 'Al menos 8 caracteres',
+  create_customer: 'Crear cliente',
+  could_not_load_customers: 'No se pudieron cargar las empresas cliente',
+  could_not_create_customer: 'No se pudo crear el cliente'
 };
 
 export default esJSON;

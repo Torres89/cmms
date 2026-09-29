@@ -313,7 +313,9 @@ function SidebarMenu() {
                   : true
                 : true;
 
-              return hasPermission && featured && inUiConfig;
+              const operatorOk = item.operatorOnly ? !!user.operator : true;
+
+              return hasPermission && featured && inUiConfig && operatorOk;
             });
             if (index === 0) {
               //ownItems

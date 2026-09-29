@@ -14,6 +14,7 @@ import ReceiptTwoToneIcon from '@mui/icons-material/ReceiptTwoTone';
 import BackupTableTwoToneIcon from '@mui/icons-material/BackupTableTwoTone';
 import SmartToyTwoToneIcon from '@mui/icons-material/SmartToyTwoTone';
 import SettingsTwoToneIcon from '@mui/icons-material/SettingsTwoTone';
+import BusinessTwoToneIcon from '@mui/icons-material/BusinessTwoTone';
 import CategoryTwoToneIcon from '@mui/icons-material/CategoryTwoTone';
 import AttachFileTwoToneIcon from '@mui/icons-material/AttachFileTwoTone';
 import { GroupsTwoTone, People } from '@mui/icons-material';
@@ -38,6 +39,8 @@ export interface MenuItem {
   permission?: PermissionEntity;
   planFeature?: PlanFeature;
   uiConfigKey?: keyof Omit<UiConfiguration, 'id'>;
+  // Shown only to operators (OPERATOR_EMAILS), never to a customer's own users.
+  operatorOnly?: boolean;
 
   items?: MenuItem[];
   name: string;
@@ -242,6 +245,12 @@ const ownMenuItems: MenuItems[] = [
         link: '/app/settings',
         icon: SettingsTwoToneIcon,
         permission: PermissionEntity.SETTINGS
+      },
+      {
+        name: 'customer_companies',
+        link: '/app/operator/companies',
+        icon: BusinessTwoToneIcon,
+        operatorOnly: true
       }
     ]
   }

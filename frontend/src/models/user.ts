@@ -29,6 +29,8 @@ export interface OwnUser extends Audit {
   rate: number;
   phone: string;
   ownsCompany: boolean;
+  // Named in OPERATOR_EMAILS on the server: may create customer companies.
+  operator?: boolean;
   jobTitle: string;
   role: Role;
   companyId: number;

@@ -200,6 +200,7 @@ Added by the machine-specialist work:
 | `MCP_PUBLIC_URL` | Public HTTPS URL of the MCP server, as clients reach it. |
 | `STORAGE_S3_*`, `STORAGE_LOCAL_*` | S3/R2 and filesystem storage backends. |
 | `SOURCE_CODE_URL` | Where the AGPL source is published (surfaced in the app footer). |
+| `OPERATOR_EMAILS` | Comma-separated emails that get the **Customer companies** page (`/app/operator/companies`, `POST /operator/companies`). Public registration stays disabled, so this is how each new customer company is created. Operators can create and list companies, nothing inside them. |
 | `PUBLIC_MOBILE_URL` | Public URL of the mobile PWA. Added to the API's CORS and websocket origins and to the agent's `AGENT_ALLOWED_ORIGINS`. |
 
 Each Python service has its own `.env.example`: `cmms-agent/`, `ingest-worker/`,

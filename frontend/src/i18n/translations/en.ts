@@ -1983,7 +1983,23 @@ const locale = {
   interval_unit_weeks: 'weeks',
   interval_unit_months: 'months',
   interval_unit_years: 'years',
-  interval_unit_cycles: 'cycles'
+  interval_unit_cycles: 'cycles',
+  customer_companies: 'Customer companies',
+  customer_companies_description: 'Every company on this service. Create one when you commission a new customer.',
+  new_customer: 'New customer',
+  new_customer_description: 'Creates the company and its first administrator. Hand the temporary password over in person; they can change it from their profile.',
+  customer_created: '{{name}} is ready.',
+  customer_created_handover: 'They sign in as {{email}} with the temporary password {{password}}. This is the only time it is shown.',
+  administrator: 'Administrator',
+  active_users: 'Active users',
+  demo: 'Demo',
+  employees_count: 'Employees',
+  customer_administrator: "Customer's administrator",
+  temporary_password: 'Temporary password',
+  temporary_password_help: 'At least 8 characters',
+  create_customer: 'Create customer',
+  could_not_load_customers: 'Could not load customer companies',
+  could_not_create_customer: 'Could not create the customer'
 };
 
 export default locale;

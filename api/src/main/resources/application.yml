@@ -176,3 +176,8 @@ admin:
   email: ${ADMIN_EMAIL:}
   password: ${ADMIN_PASSWORD:}
   company-name: ${ADMIN_COMPANY_NAME:Default Company}
+# Who may create customer companies from the Customers page (comma-separated
+# emails). With public registration disabled this is the only way a second
+# company comes into being. Empty: nobody.
+operator:
+  emails: ${OPERATOR_EMAILS:}

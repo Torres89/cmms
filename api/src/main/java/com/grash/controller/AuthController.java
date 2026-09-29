@@ -12,6 +12,7 @@ import com.grash.repository.UserRepository;
 import com.grash.security.CurrentUser;
 import com.grash.security.JwtTokenProvider;
 import com.grash.service.CompanyService;
+import com.grash.service.CustomerProvisioningService;
 import com.grash.service.UserService;
 import com.grash.service.VerificationTokenService;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,6 +48,7 @@ public class AuthController {
     private final MailServiceFactory mailServiceFactory;
     private final CompanyService companyService;
     private final UserRepository userRepository;
+    private final CustomerProvisioningService customerProvisioningService;
     @Value("${frontend.url}")
     private String frontendUrl;
     @Value("${registration.disable:true}")
@@ -144,7 +146,10 @@ public class AuthController {
     @GetMapping(value = "/me")
     @PreAuthorize("permitAll()")
     public UserResponseDTO whoami(HttpServletRequest req) {
-        return userMapper.toResponseDto(userService.whoami(req));
+        OwnUser user = userService.whoami(req);
+        UserResponseDTO response = userMapper.toResponseDto(user);
+        response.setOperator(customerProvisioningService.isOperator(user));
+        return response;
     }
 
     @GetMapping("/refresh")
