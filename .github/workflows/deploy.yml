@@ -108,6 +108,10 @@ jobs:
             export GH_USER_OR_ORG=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
             # Login to GHCR for private packages (add GHCR_PAT secret with read:packages scope; skip if public)
             [[ -n "${{ secrets.GHCR_PAT }}" ]] && echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin || true
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+            # Pull only the images this workflow builds. Third-party images
+            # (MinIO, Postgres, Caddy) are pinned and already on the box; a
+            # blanket pull re-fetches them and fails the whole release when an
+            # upstream withdraws a tag - minio/minio did exactly that.
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull api frontend mobile agent ingest-worker
             # Restart containers
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
